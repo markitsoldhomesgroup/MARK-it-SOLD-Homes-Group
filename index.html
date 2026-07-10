@@ -509,7 +509,7 @@
         <div class="leadgen-dayhead">
           <span class="leadgen-dayname">${day.name}</span>
           <span class="leadgen-total" data-role="total">0 min</span>
-          <span class="daily-badge leadgen-status leadgen-status--under" data-role="status">⚠️ Not Yet</span>
+          <span class="daily-badge leadgen-status leadgen-status--under" data-role="status">❌ Not Yet</span>
         </div>
         <div class="leadgen-chunks" data-role="chunks"></div>
         <button type="button" class="leadgen-add" data-role="add">+ Add time block</button>
@@ -636,7 +636,7 @@
       statusEl.classList.remove('leadgen-status--under');
       statusEl.classList.add('leadgen-status--met');
     } else {
-      statusEl.textContent = '⚠️ Not Yet';
+      statusEl.textContent = '❌ Not Yet';
       statusEl.classList.remove('leadgen-status--met');
       statusEl.classList.add('leadgen-status--under');
     }
