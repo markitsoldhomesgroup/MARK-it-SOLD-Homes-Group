@@ -231,8 +231,26 @@
   .leadgen-dayhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
   .leadgen-dayname { font-size: 14px; font-weight: 700; color: var(--dark); }
   .leadgen-total { font-size: 12.5px; color: var(--mid); font-variant-numeric: tabular-nums; }
+  .leadgen-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 16px;
+    border-radius: 8px;
+  }
   .leadgen-status--met { background: var(--green-bg); color: var(--green); }
   .leadgen-status--under { background: var(--red-soft); color: var(--red); }
+  .status-icon { font-size: 77px; line-height: 0.8; display: inline-block; }
+  .status-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+
+  @keyframes leadgen-flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.12; }
+  }
+  .status-icon.is-flashing {
+    animation: leadgen-flash 0.45s steps(1, end) 20;
+    animation-fill-mode: forwards;
+  }
   .leadgen-chunks { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
   .leadgen-chunk { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .leadgen-chunk input[type="time"] {
@@ -448,7 +466,7 @@
   const LEADGEN_GOAL_MINUTES = 120;
   const MONTH_MULTIPLIER = 4.33;
 
-  let state = { leadGen: blankLeadGen() };
+  let state = { leadGen: blankLeadGen(), leadGenStatusSeen: {} };
 
   function blankLeadGen() {
     const o = {};
@@ -509,7 +527,10 @@
         <div class="leadgen-dayhead">
           <span class="leadgen-dayname">${day.name}</span>
           <span class="leadgen-total" data-role="total">0 min</span>
-          <span class="daily-badge leadgen-status leadgen-status--under" data-role="status">❌ Not Yet</span>
+          <span class="leadgen-status leadgen-status--under" data-role="status">
+            <span class="status-icon" data-role="status-icon">❌</span>
+            <span class="status-label" data-role="status-label">Not Yet</span>
+          </span>
         </div>
         <div class="leadgen-chunks" data-role="chunks"></div>
         <button type="button" class="leadgen-add" data-role="add">+ Add time block</button>
@@ -631,14 +652,27 @@
     const total = dayMinutes(dayKey);
     dayEl.querySelector('[data-role="total"]').textContent = formatDuration(total);
     const statusEl = dayEl.querySelector('[data-role="status"]');
-    if (total >= LEADGEN_GOAL_MINUTES) {
-      statusEl.textContent = '✅ Goal Met';
+    const iconEl = statusEl.querySelector('[data-role="status-icon"]');
+    const labelEl = statusEl.querySelector('[data-role="status-label"]');
+    const newStatus = total >= LEADGEN_GOAL_MINUTES ? 'met' : 'under';
+
+    if (newStatus === 'met') {
+      iconEl.textContent = '🔥';
+      labelEl.textContent = 'Great Job!';
       statusEl.classList.remove('leadgen-status--under');
       statusEl.classList.add('leadgen-status--met');
     } else {
-      statusEl.textContent = '❌ Not Yet';
+      iconEl.textContent = '❌';
+      labelEl.textContent = 'Not Yet';
       statusEl.classList.remove('leadgen-status--met');
       statusEl.classList.add('leadgen-status--under');
+    }
+
+    if (state.leadGenStatusSeen[dayKey] !== newStatus) {
+      state.leadGenStatusSeen[dayKey] = newStatus;
+      iconEl.classList.remove('is-flashing');
+      void iconEl.offsetWidth; // force reflow so the animation restarts
+      iconEl.classList.add('is-flashing');
     }
   }
 
@@ -791,6 +825,7 @@
       setGoalLocked(goalEl, !!rm.locked);
     });
     state.leadGen = record.leadGen ? JSON.parse(JSON.stringify(record.leadGen)) : blankLeadGen();
+    state.leadGenStatusSeen = {};
     DAYS.forEach(d => renderLeadGenDay(d.key));
   }
 
