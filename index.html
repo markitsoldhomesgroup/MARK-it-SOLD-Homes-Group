@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Weekly Goal Sheet – MARK it SOLD</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red:      #CE011F;
+    --red-soft: #F9E8EB;
+    --dark:     #1A1A1A;
+    --body:     #4D4D4D;
+    --mid:      #7A7069;
+    --ground:   #F6F4F1;
+    --surface:  #FFFFFF;
+    --border:   #E4DDD8;
+    --green:    #2E7D32;
+    --green-bg: #EBF3EB;
+    --radius:   9px;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--body);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-header { background: var(--dark); color: #fff; padding: 0; }
+  .header-inner { max-width: 720px; margin: 0 auto; padding: 36px 28px 32px; }
+  .header-eyebrow {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .header-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(24px, 4vw, 34px);
+    font-weight: normal;
+    color: #fff;
+    line-height: 1.2;
+    text-wrap: balance;
+    margin-bottom: 24px;
+  }
+  .header-title em { font-style: normal; color: var(--red); }
+
+  .agent-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .agent-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #9A9089;
+    margin-bottom: 6px;
+  }
+  .agent-field input {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255,255,255,.08);
+    border: 1.5px solid rgba(255,255,255,.15);
+    border-radius: 6px;
+    font-size: 14px;
+    color: #fff;
+    outline: none;
+    transition: border-color .15s;
+    font-family: inherit;
+  }
+  .agent-field input::placeholder { color: rgba(255,255,255,.3); }
+  .agent-field input:focus { border-color: var(--red); }
+  .agent-field input[type="week"] { color-scheme: dark; }
+
+  /* ── CONTENT ── */
+  .content { max-width: 720px; margin: 0 auto; padding: 36px 28px 80px; }
+
+  /* ── SECTION ── */
+  .goal-section { margin-bottom: 28px; }
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .section-icon {
+    width: 34px; height: 34px;
+    background: var(--red);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .section-label { font-family: Georgia, 'Times New Roman', serif; font-size: 17px; color: var(--dark); }
+  .section-sub { font-size: 11.5px; color: var(--mid); margin-top: 1px; }
+
+  /* ── METRIC CARD / ROWS ── */
+  .metric-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .metric-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "info stepper" "goals goals";
+    align-items: center;
+    gap: 12px 16px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    transition: background .1s;
+  }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-row:hover { background: #FDFBFA; }
+  .metric-info { grid-area: info; min-width: 0; }
+  .metric-name { font-size: 14px; font-weight: 600; color: var(--dark); margin-bottom: 2px; }
+  .metric-hint { font-size: 12px; color: var(--mid); }
+  .daily-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--green-bg);
+    color: var(--green);
+    border-radius: 4px;
+    padding: 1px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── STEPPER ── */
+  .stepper { grid-area: stepper; display: flex; align-items: center; gap: 0; border: 1.5px solid var(--border); border-radius: 7px; overflow: hidden; flex-shrink: 0; }
+  .stepper button {
+    width: 36px; height: 40px;
+    background: #F4F1EE;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--body);
+    display: flex; align-items: center; justify-content: center;
+    transition: background .1s, color .1s;
+    flex-shrink: 0;
+    user-select: none;
+    line-height: 1;
+    padding-bottom: 1px;
+  }
+  .stepper button:hover { background: var(--red); color: #fff; }
+  .stepper button:active { background: #a8001a; color: #fff; }
+  .stepper input {
+    width: 52px; height: 40px;
+    border: none;
+    border-left: 1.5px solid var(--border);
+    border-right: 1.5px solid var(--border);
+    text-align: center;
+    font-size: 16px; font-weight: 700;
+    color: var(--dark);
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+    background: #fff;
+    -moz-appearance: textfield;
+  }
+  .stepper input::-webkit-inner-spin-button,
+  .stepper input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .stepper input:focus { background: #fff8f8; }
+
+  /* ── GOAL / PERCENT STRIP ── */
+  .metric-goals {
+    grid-area: goals;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 18px;
+    padding-top: 12px;
+    margin-top: 2px;
+    border-top: 1px dashed var(--border);
+  }
+  .goal-field, .goal-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--mid);
+  }
+  .goal-field input, .goal-field output {
+    width: 72px;
+    padding: 6px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--dark);
+    text-align: center;
+    font-family: inherit;
+    background: #fff;
+    -moz-appearance: textfield;
+  }
+  .goal-field input::-webkit-inner-spin-button,
+  .goal-field input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .goal-field input.locked { background: var(--ground); color: var(--mid); cursor: not-allowed; }
+  .goal-field--derived output { background: var(--ground); color: var(--mid); display: inline-block; }
+  .pct-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: #F0EDEA;
+    color: var(--body);
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── LEAD GENERATION TRACKER ── */
+  .leadgen-standard {
+    background: var(--red-soft);
+    color: var(--red);
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+    padding: 12px 16px;
+    margin: 16px 16px 0;
+    border-radius: 7px;
+  }
+  .leadgen-day { padding: 16px 18px; border-bottom: 1px solid var(--border); }
+  .leadgen-day:last-child { border-bottom: none; }
+  .leadgen-dayhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .leadgen-dayname { font-size: 14px; font-weight: 700; color: var(--dark); }
+  .leadgen-total { font-size: 12.5px; color: var(--mid); font-variant-numeric: tabular-nums; }
+  .leadgen-status--met { background: var(--green-bg); color: var(--green); }
+  .leadgen-status--under { background: var(--red-soft); color: var(--red); }
+  .leadgen-chunks { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .leadgen-chunk { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .leadgen-chunk input[type="time"] {
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: var(--dark);
+    background: #fff;
+  }
+  .leadgen-chunk span { font-size: 12px; color: var(--mid); }
+  .chunk-remove {
+    width: 26px; height: 26px;
+    border: none;
+    border-radius: 50%;
+    background: #F4F1EE;
+    color: var(--mid);
+    font-size: 14px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .chunk-remove:hover { background: var(--red); color: #fff; }
+  .leadgen-add { background: none; border: none; color: var(--red); font-size: 12.5px; font-weight: 700; cursor: pointer; padding: 4px 0; }
+  .leadgen-add:hover { text-decoration: underline; }
+
+  /* ── SUMMARY ── */
+  .summary-card { background: var(--dark); border-radius: var(--radius); padding: 28px 24px; margin-top: 32px; color: #fff; }
+  .summary-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 19px;
+    color: #fff;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+  }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .summary-item { background: rgba(255,255,255,.06); border-radius: 6px; padding: 12px 14px; }
+  .summary-num { font-size: 26px; font-weight: 700; color: #fff; line-height: 1; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  .summary-label { font-size: 11px; color: #9A9089; text-transform: uppercase; letter-spacing: .08em; }
+
+  /* ── COMMITMENT ── */
+  .commitment-block { background: rgba(206,1,31,.15); border: 1px solid rgba(206,1,31,.3); border-radius: 7px; padding: 18px 20px; margin-bottom: 20px; }
+  .commitment-line { font-family: Georgia, 'Times New Roman', serif; font-size: 14.5px; color: #fff; line-height: 1.6; }
+  .commitment-name { color: var(--red); font-style: italic; }
+
+  /* ── ACTIONS ── */
+  .action-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn { padding: 11px 22px; border-radius: 7px; font-size: 13.5px; font-weight: 600; border: none; cursor: pointer; font-family: inherit; transition: background .15s; }
+  .btn-primary { background: var(--red); color: #fff; }
+  .btn-primary:hover { background: #a8001a; }
+  .btn-secondary { background: rgba(255,255,255,.1); color: #fff; border: 1.5px solid rgba(255,255,255,.2); }
+  .btn-secondary:hover { background: rgba(255,255,255,.18); }
+
+  /* ── MOTIVATIONAL BAR ── */
+  .motive-bar { background: var(--red); color: #fff; text-align: center; padding: 12px 20px; font-size: 13px; font-family: Georgia, 'Times New Roman', serif; letter-spacing: .01em; }
+
+  /* ── STORAGE NOTE ── */
+  .storage-note { text-align: center; font-size: 11px; color: var(--mid); margin-top: 24px; line-height: 1.5; }
+
+  /* ── PRINT ── */
+  @media print {
+    body { background: #fff; }
+    .page-header { background: #fff; color: #000; border-bottom: 2px solid #CE011F; }
+    .header-eyebrow { color: #CE011F; }
+    .header-title { color: #000; }
+    .header-title em { color: #CE011F; }
+    .agent-field input { background: #f5f5f5; color: #000; border-color: #ccc; }
+    .summary-card { background: #1A1A1A; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .btn, .stepper button, .leadgen-add, .chunk-remove { display: none; }
+    .motive-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .storage-note { display: none; }
+  }
+
+  @media (max-width: 560px) {
+    .agent-row { grid-template-columns: 1fr; }
+    .header-inner, .content { padding-left: 18px; padding-right: 18px; }
+    .summary-grid { grid-template-columns: 1fr 1fr; }
+    .metric-goals { gap: 8px 12px; }
+    .goal-field, .goal-stat { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="motive-bar">
+  "You can't manage what you don't measure. Set your intentions before the week begins."
+</div>
+
+<!-- HEADER -->
+<div class="page-header">
+  <div class="header-inner">
+    <div class="header-eyebrow">MARK it SOLD Homes Group &nbsp;·&nbsp; Keller Williams Local</div>
+    <h1 class="header-title"><em>Weekly Goal Sheet</em><br>Set Your Intentions Before the Week Begins</h1>
+    <div class="agent-row">
+      <div class="agent-field">
+        <label>Agent Name</label>
+        <input type="text" id="agent-name" placeholder="Your full name">
+      </div>
+      <div class="agent-field">
+        <label>Week Of</label>
+        <input type="week" id="week-of">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- LEAD GENERATION TRACKER -->
+  <div class="goal-section">
+    <div class="section-header">
+      <div class="section-icon">⏱️</div>
+      <div>
+        <div class="section-label">Lead Generation</div>
+        <div class="section-sub">Daily prospecting time — logged in blocks, tracked against the team standard</div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="leadgen-standard">Team Standard: 9:30 AM – 12:30 PM · 2-hour minimum</div>
+      <div data-role="leadgen-days"></div>
+    </div>
+  </div>
+
+  <!-- METRIC SECTIONS (Prospecting / Leads & Appointments / Referrals & Reviews) -->
+  <div data-role="sections-container"></div>
+
+  <!-- SUMMARY -->
+  <div class="summary-card">
+    <div class="summary-title">Your Week at a Glance</div>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="summary-num" id="sum-calls">0</div>
+        <div class="summary-label">Calls / Week</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-num" id="sum-convos">0</div>
+        <div class="summary-label">Conversations</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-num" id="sum-touches">0</div>
+        <div class="summary-label">DB Touches</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-num" id="sum-leads">0</div>
+        <div class="summary-label">Leads</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-num" id="sum-appts">0</div>
+        <div class="summary-label">Appts Set</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-num" id="sum-referrals">0</div>
+        <div class="summary-label">Referrals Given</div>
+      </div>
+    </div>
+
+    <div class="commitment-block">
+      <div class="commitment-line">
+        I, <span class="commitment-name" id="commit-name">_______________</span>,
+        commit to hitting these numbers during the week of
+        <span class="commitment-name" id="commit-week">_______________</span>.
+        I understand that consistent daily action — not perfection — is what builds a lasting business.
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-primary" onclick="window.print()">🖨 Print / Save as PDF</button>
+      <button class="btn btn-secondary" onclick="resetWeek()">↺ Start Fresh Week</button>
+    </div>
+  </div>
+
+  <div class="storage-note">
+    Goals and progress are saved in this browser only — they don't sync across devices. Monthly totals combine every week saved under the exact same agent name in this browser.
+  </div>
+
+</div>
+
+<script>
+  /* ────────────────────────── DATA MODEL ────────────────────────── */
+
+  const METRICS = [
+    { key: 'callsMade',        name: 'Calls Made',           hint: 'Total outbound calls placed to prospects, past clients, and database', section: 'prospecting', daily: true },
+    { key: 'conversationsHad', name: 'Conversations Had',    hint: 'Meaningful two-way conversations — not voicemails',                      section: 'prospecting', daily: true },
+    { key: 'textsSent',        name: 'Texts Sent',           hint: 'Personalized texts to leads or past clients',                            section: 'prospecting', daily: true },
+    { key: 'emailsSent',       name: 'Emails Sent',          hint: 'Outreach emails — not mass sends',                                       section: 'prospecting', daily: true },
+    { key: 'databaseTouches',  name: 'Database Touches',     hint: 'Any contact with a person in your sphere — call, text, email, or note',  section: 'prospecting', daily: true },
+    { key: 'socialEngagement', name: 'FB/IG Engagement',     hint: 'Minutes spent intentionally engaging on social media — comments, DMs, stories', section: 'prospecting', daily: true, dailyUnit: ' min/day', step: 5 },
+    { key: 'leadsGenerated',   name: 'Leads Generated',      hint: 'New buyer or seller leads added to your pipeline this week',             section: 'leads' },
+    { key: 'appointmentsSet', name: 'Appointments Set',      hint: 'Listing appointments, buyer consultations, or strategy sessions booked', section: 'leads' },
+    { key: 'appointmentsHeld', name: 'Appointments Held',    hint: 'Appointments that actually happened — measures show rate',               section: 'leads' },
+    { key: 'openHouses',       name: 'Open Houses',          hint: 'Open houses planned for the week — great lead gen opportunity',          section: 'leads' },
+    { key: 'referralsGiven',  name: 'Referrals Given',       hint: 'Clients or contacts referred out to other agents or professionals',      section: 'referrals' },
+    { key: 'referralsReceived', name: 'Referrals Received',  hint: 'Warm leads sent to you by someone in your network',                      section: 'referrals' },
+    { key: 'reviewsRequested', name: 'Reviews Requested',    hint: 'Google or Zillow review requests sent to past clients',                  section: 'referrals' },
+    { key: 'reviewsReceived', name: 'Reviews Received',      hint: 'New 5-star reviews posted this week — goal is to get at least one',      section: 'referrals' },
+  ];
+
+  const SECTIONS = [
+    { key: 'prospecting', icon: '📞', label: 'Prospecting',            sub: 'Daily activities — goal shown as weekly total · green badge shows per-day breakdown' },
+    { key: 'leads',       icon: '📅', label: 'Leads &amp; Appointments',    sub: 'Weekly targets — track against these at end of week' },
+    { key: 'referrals',   icon: '🔄', label: 'Referrals &amp; Reviews',    sub: 'Weekly targets — the compounding activities that grow your business long-term' },
+  ];
+
+  const DAYS = [
+    { key: 'mon', name: 'Monday' },
+    { key: 'tue', name: 'Tuesday' },
+    { key: 'wed', name: 'Wednesday' },
+    { key: 'thu', name: 'Thursday' },
+    { key: 'fri', name: 'Friday' },
+  ];
+
+  const LEADGEN_GOAL_MINUTES = 120;
+  const MONTH_MULTIPLIER = 4.33;
+
+  let state = { leadGen: blankLeadGen() };
+
+  function blankLeadGen() {
+    const o = {};
+    DAYS.forEach(d => { o[d.key] = [{ start: '', end: '' }]; });
+    return o;
+  }
+
+  /* ────────────────────────── MARKUP BUILDERS ────────────────────────── */
+
+  function metricRowMarkup(m) {
+    const step = m.step || 1;
+    const dailyBadge = m.daily
+      ? `<span class="daily-badge" data-role="daily-badge">0${m.dailyUnit || '/day'}</span>`
+      : '';
+    return `
+      <div class="metric-row" data-metric="${m.key}">
+        <div class="metric-info">
+          <div class="metric-name">${m.name} ${dailyBadge}</div>
+          <div class="metric-hint">${m.hint}</div>
+        </div>
+        <div class="stepper">
+          <button type="button" data-delta="-${step}">−</button>
+          <input class="count" type="number" value="0" min="0" inputmode="numeric" data-role="count">
+          <button type="button" data-delta="${step}">+</button>
+        </div>
+        <div class="metric-goals">
+          <label class="goal-field">
+            <span>Weekly Goal</span>
+            <input class="weekly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="weekly-goal">
+          </label>
+          <div class="goal-stat"><span>Weekly %</span><span class="pct-badge" data-role="weekly-pct">—</span></div>
+          <div class="goal-field goal-field--derived">
+            <span>Monthly Goal</span>
+            <output class="monthly-goal" data-role="monthly-goal">—</output>
+          </div>
+          <div class="goal-stat"><span>Monthly %</span><span class="pct-badge" data-role="monthly-pct">—</span></div>
+        </div>
+      </div>`;
+  }
+
+  function sectionMarkup(section) {
+    return `
+      <div class="goal-section" data-section="${section.key}">
+        <div class="section-header">
+          <div class="section-icon">${section.icon}</div>
+          <div>
+            <div class="section-label">${section.label}</div>
+            <div class="section-sub">${section.sub}</div>
+          </div>
+        </div>
+        <div class="metric-card" data-role="metric-card"></div>
+      </div>`;
+  }
+
+  function dayMarkup(day) {
+    return `
+      <div class="leadgen-day" data-day="${day.key}">
+        <div class="leadgen-dayhead">
+          <span class="leadgen-dayname">${day.name}</span>
+          <span class="leadgen-total" data-role="total">0 min</span>
+          <span class="daily-badge leadgen-status leadgen-status--under" data-role="status">⚠️ Not Yet</span>
+        </div>
+        <div class="leadgen-chunks" data-role="chunks"></div>
+        <button type="button" class="leadgen-add" data-role="add">+ Add time block</button>
+      </div>`;
+  }
+
+  function buildPage() {
+    const leadgenDaysContainer = document.querySelector('[data-role="leadgen-days"]');
+    leadgenDaysContainer.innerHTML = DAYS.map(dayMarkup).join('');
+    DAYS.forEach(d => {
+      const dayEl = document.querySelector(`.leadgen-day[data-day="${d.key}"]`);
+      dayEl.querySelector('[data-role="add"]').addEventListener('click', () => addChunk(d.key));
+    });
+
+    const sectionsContainer = document.querySelector('[data-role="sections-container"]');
+    sectionsContainer.innerHTML = SECTIONS.map(sectionMarkup).join('');
+    SECTIONS.forEach(section => {
+      const card = document.querySelector(`.goal-section[data-section="${section.key}"] [data-role="metric-card"]`);
+      const rows = METRICS.filter(m => m.section === section.key);
+      card.innerHTML = rows.map(metricRowMarkup).join('');
+    });
+
+    METRICS.forEach(m => {
+      const row = getRow(m.key);
+      row.querySelectorAll('.stepper button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const delta = parseInt(btn.dataset.delta, 10);
+          const countEl = row.querySelector('[data-role="count"]');
+          countEl.value = Math.max(0, (parseInt(countEl.value) || 0) + delta);
+          onDataChanged();
+        });
+      });
+      row.querySelector('[data-role="count"]').addEventListener('input', onDataChanged);
+
+      const goalEl = row.querySelector('[data-role="weekly-goal"]');
+      goalEl.addEventListener('input', updateAll);
+      goalEl.addEventListener('blur', () => {
+        if (!goalEl.readOnly) {
+          const v = parseInt(goalEl.value, 10);
+          if (v > 0) setGoalLocked(goalEl, true);
+        }
+        onDataChanged();
+      });
+    });
+
+    DAYS.forEach(d => renderLeadGenDay(d.key));
+  }
+
+  function getRow(key) {
+    return document.querySelector(`.metric-row[data-metric="${key}"]`);
+  }
+
+  function setGoalLocked(goalEl, locked) {
+    goalEl.readOnly = locked;
+    goalEl.classList.toggle('locked', locked);
+  }
+
+  /* ────────────────────────── LEAD GEN CHUNKS ────────────────────────── */
+
+  function renderLeadGenDay(dayKey) {
+    const dayEl = document.querySelector(`.leadgen-day[data-day="${dayKey}"]`);
+    const container = dayEl.querySelector('[data-role="chunks"]');
+    const chunks = state.leadGen[dayKey] || [{ start: '', end: '' }];
+    container.innerHTML = '';
+    chunks.forEach((chunk, idx) => {
+      const row = document.createElement('div');
+      row.className = 'leadgen-chunk';
+      row.innerHTML = `
+        <input type="time" class="chunk-start" step="60" value="${chunk.start || ''}">
+        <span>to</span>
+        <input type="time" class="chunk-end" step="60" value="${chunk.end || ''}">
+        <button type="button" class="chunk-remove" aria-label="Remove time block" ${chunks.length <= 1 ? 'hidden' : ''}>×</button>
+      `;
+      const startEl = row.querySelector('.chunk-start');
+      const endEl = row.querySelector('.chunk-end');
+      const removeBtn = row.querySelector('.chunk-remove');
+      startEl.addEventListener('change', () => { state.leadGen[dayKey][idx].start = startEl.value; onDataChanged(); });
+      endEl.addEventListener('change', () => { state.leadGen[dayKey][idx].end = endEl.value; onDataChanged(); });
+      removeBtn.addEventListener('click', () => removeChunk(dayKey, idx));
+      container.appendChild(row);
+    });
+  }
+
+  function addChunk(dayKey) {
+    state.leadGen[dayKey].push({ start: '', end: '' });
+    renderLeadGenDay(dayKey);
+    onDataChanged();
+  }
+
+  function removeChunk(dayKey, idx) {
+    if (state.leadGen[dayKey].length <= 1) return;
+    state.leadGen[dayKey].splice(idx, 1);
+    renderLeadGenDay(dayKey);
+    onDataChanged();
+  }
+
+  function chunkMinutes(start, end) {
+    if (!start || !end) return 0;
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    const total = (eh * 60 + em) - (sh * 60 + sm);
+    return total > 0 ? total : 0;
+  }
+
+  function dayMinutes(dayKey) {
+    return (state.leadGen[dayKey] || []).reduce((sum, c) => sum + chunkMinutes(c.start, c.end), 0);
+  }
+
+  function formatDuration(mins) {
+    if (mins <= 0) return '0 min';
+    const h = Math.floor(mins / 60), m = mins % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m} min`;
+  }
+
+  function updateLeadGenDay(dayKey) {
+    const dayEl = document.querySelector(`.leadgen-day[data-day="${dayKey}"]`);
+    const total = dayMinutes(dayKey);
+    dayEl.querySelector('[data-role="total"]').textContent = formatDuration(total);
+    const statusEl = dayEl.querySelector('[data-role="status"]');
+    if (total >= LEADGEN_GOAL_MINUTES) {
+      statusEl.textContent = '✅ Goal Met';
+      statusEl.classList.remove('leadgen-status--under');
+      statusEl.classList.add('leadgen-status--met');
+    } else {
+      statusEl.textContent = '⚠️ Not Yet';
+      statusEl.classList.remove('leadgen-status--met');
+      statusEl.classList.add('leadgen-status--under');
+    }
+  }
+
+  /* ────────────────────────── PERSISTENCE (localStorage) ────────────────────────── */
+
+  function slugify(name) {
+    const s = (name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    return s || 'unassigned';
+  }
+
+  function currentAgentSlug() { return slugify(document.getElementById('agent-name').value); }
+  function currentWeekValue() { return document.getElementById('week-of').value; }
+  function storageKey(slug, week) { return `wgs:v1:${slug}:${week}`; }
+
+  function mondayOfIsoWeek(weekStr) {
+    if (!weekStr || weekStr.indexOf('-W') === -1) return null;
+    const [yearStr, weekPart] = weekStr.split('-W');
+    const year = parseInt(yearStr, 10);
+    const week = parseInt(weekPart, 10);
+    if (!year || !week) return null;
+    const jan4 = new Date(year, 0, 4);
+    const jan4Day = jan4.getDay() || 7; // Mon=1..Sun=7
+    const week1Monday = new Date(jan4);
+    week1Monday.setDate(jan4.getDate() - (jan4Day - 1));
+    const monday = new Date(week1Monday);
+    monday.setDate(week1Monday.getDate() + (week - 1) * 7);
+    return monday;
+  }
+
+  function buildRecordFromDOM() {
+    const metrics = {};
+    METRICS.forEach(m => {
+      const row = getRow(m.key);
+      const countEl = row.querySelector('[data-role="count"]');
+      const goalEl = row.querySelector('[data-role="weekly-goal"]');
+      metrics[m.key] = {
+        actual: parseInt(countEl.value) || 0,
+        weeklyGoal: goalEl.value === '' ? '' : (parseInt(goalEl.value) || 0),
+        locked: goalEl.readOnly,
+      };
+    });
+    return {
+      v: 1,
+      agentName: document.getElementById('agent-name').value,
+      week: currentWeekValue(),
+      updatedAt: Date.now(),
+      metrics,
+      leadGen: JSON.parse(JSON.stringify(state.leadGen)),
+    };
+  }
+
+  function saveRecord() {
+    try {
+      const week = currentWeekValue();
+      if (!week) return;
+      const slug = currentAgentSlug();
+      localStorage.setItem(storageKey(slug, week), JSON.stringify(buildRecordFromDOM()));
+    } catch (e) { /* localStorage unavailable — degrade silently for this session */ }
+  }
+
+  function loadRecord(slug, week) {
+    try {
+      const raw = localStorage.getItem(storageKey(slug, week));
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function findMostRecentOtherRecord(slug, excludeWeek) {
+    let best = null, bestMonday = null;
+    try {
+      const prefix = `wgs:v1:${slug}:`;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || k.indexOf(prefix) !== 0) continue;
+        const week = k.slice(prefix.length);
+        if (week === excludeWeek) continue;
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        let rec;
+        try { rec = JSON.parse(raw); } catch (e) { continue; }
+        const monday = mondayOfIsoWeek(week);
+        if (!monday) continue;
+        if (!bestMonday || monday > bestMonday) { bestMonday = monday; best = rec; }
+      }
+    } catch (e) { /* ignore */ }
+    return best;
+  }
+
+  function computeMonthlySum(key) {
+    const week = currentWeekValue();
+    const monday = mondayOfIsoWeek(week);
+    if (!monday) return 0;
+    const targetY = monday.getFullYear(), targetM = monday.getMonth();
+    const slug = currentAgentSlug();
+    const prefix = `wgs:v1:${slug}:`;
+    let sum = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || k.indexOf(prefix) !== 0) continue;
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        let rec;
+        try { rec = JSON.parse(raw); } catch (e) { continue; }
+        const m = mondayOfIsoWeek(rec.week);
+        if (!m) continue;
+        if (m.getFullYear() === targetY && m.getMonth() === targetM) {
+          sum += (rec.metrics && rec.metrics[key] ? (parseInt(rec.metrics[key].actual) || 0) : 0);
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return sum;
+  }
+
+  function buildCarriedRecord(prev, week) {
+    const record = {
+      v: 1,
+      agentName: document.getElementById('agent-name').value,
+      week,
+      updatedAt: 0,
+      metrics: {},
+      leadGen: blankLeadGen(),
+    };
+    METRICS.forEach(m => {
+      const prevGoal = prev && prev.metrics && prev.metrics[m.key] ? prev.metrics[m.key].weeklyGoal : '';
+      record.metrics[m.key] = { actual: 0, weeklyGoal: (prevGoal === '' || prevGoal == null) ? '' : prevGoal, locked: false };
+    });
+    return record;
+  }
+
+  const LAST_AGENT_KEY = 'wgs:lastAgentName';
+
+  function rememberAgentName(name) {
+    try { localStorage.setItem(LAST_AGENT_KEY, name || ''); } catch (e) { /* ignore */ }
+  }
+
+  function recallAgentName() {
+    try { return localStorage.getItem(LAST_AGENT_KEY) || ''; } catch (e) { return ''; }
+  }
+
+  function applyRecordToDOM(record) {
+    if (record.agentName) document.getElementById('agent-name').value = record.agentName;
+    METRICS.forEach(m => {
+      const row = getRow(m.key);
+      const countEl = row.querySelector('[data-role="count"]');
+      const goalEl = row.querySelector('[data-role="weekly-goal"]');
+      const rm = (record.metrics && record.metrics[m.key]) || { actual: 0, weeklyGoal: '', locked: false };
+      countEl.value = rm.actual || 0;
+      goalEl.value = (rm.weeklyGoal === '' || rm.weeklyGoal == null) ? '' : rm.weeklyGoal;
+      setGoalLocked(goalEl, !!rm.locked);
+    });
+    state.leadGen = record.leadGen ? JSON.parse(JSON.stringify(record.leadGen)) : blankLeadGen();
+    DAYS.forEach(d => renderLeadGenDay(d.key));
+  }
+
+  function refreshForCurrentKey() {
+    const week = currentWeekValue();
+    if (!week) { updateAll(); return; }
+    const slug = currentAgentSlug();
+    const existing = loadRecord(slug, week);
+    if (existing) {
+      applyRecordToDOM(existing);
+    } else {
+      const prev = findMostRecentOtherRecord(slug, week);
+      applyRecordToDOM(buildCarriedRecord(prev, week));
+    }
+    saveRecord();
+    updateAll();
+  }
+
+  function resetWeek() {
+    if (!confirm("Start a fresh week? This clears this week's counts and lead-gen times. Weekly goals carry over from last week, unlocked so you can confirm or tweak them.")) return;
+    const week = currentWeekValue();
+    const slug = currentAgentSlug();
+    const prev = findMostRecentOtherRecord(slug, week);
+    applyRecordToDOM(buildCarriedRecord(prev, week));
+    saveRecord();
+    updateAll();
+  }
+
+  /* ────────────────────────── CALCULATIONS / RENDER ────────────────────────── */
+
+  function pctText(actual, goal) {
+    if (!goal || goal <= 0) return '—';
+    return Math.round((actual / goal) * 100) + '%';
+  }
+
+  function onDataChanged() {
+    saveRecord();
+    updateAll();
+  }
+
+  function updateMetricRow(m) {
+    const row = getRow(m.key);
+    const countEl = row.querySelector('[data-role="count"]');
+    const goalEl = row.querySelector('[data-role="weekly-goal"]');
+    const weeklyPctEl = row.querySelector('[data-role="weekly-pct"]');
+    const monthlyGoalEl = row.querySelector('[data-role="monthly-goal"]');
+    const monthlyPctEl = row.querySelector('[data-role="monthly-pct"]');
+    const badgeEl = row.querySelector('[data-role="daily-badge"]');
+
+    const actual = parseInt(countEl.value) || 0;
+    const weeklyGoal = goalEl.value === '' ? 0 : (parseInt(goalEl.value) || 0);
+
+    weeklyPctEl.textContent = pctText(actual, weeklyGoal);
+
+    const monthlyGoal = weeklyGoal > 0 ? Math.round(weeklyGoal * MONTH_MULTIPLIER) : 0;
+    monthlyGoalEl.textContent = monthlyGoal > 0 ? String(monthlyGoal) : '—';
+
+    const monthlyActual = computeMonthlySum(m.key);
+    monthlyPctEl.textContent = pctText(monthlyActual, monthlyGoal);
+
+    if (badgeEl) {
+      const perDay = actual / 5;
+      const perDayRounded = Math.round(perDay * 10) / 10;
+      const perDayStr = Number.isInteger(perDayRounded) ? String(perDayRounded) : perDayRounded.toFixed(1);
+      badgeEl.textContent = perDayStr + (m.dailyUnit || '/day');
+      badgeEl.style.background = actual > 0 ? 'var(--green-bg)' : '#F0EDEA';
+      badgeEl.style.color = actual > 0 ? 'var(--green)' : 'var(--mid)';
+    }
+  }
+
+  function updateSummaryAndCommitment() {
+    const val = key => parseInt(getRow(key).querySelector('[data-role="count"]').value) || 0;
+    document.getElementById('sum-calls').textContent = val('callsMade');
+    document.getElementById('sum-convos').textContent = val('conversationsHad');
+    document.getElementById('sum-touches').textContent = val('databaseTouches');
+    document.getElementById('sum-leads').textContent = val('leadsGenerated');
+    document.getElementById('sum-appts').textContent = val('appointmentsSet');
+    document.getElementById('sum-referrals').textContent = val('referralsGiven');
+
+    const name = document.getElementById('agent-name').value.trim() || '_______________';
+    const weekEl = document.getElementById('week-of');
+    let weekLabel = '_______________';
+    const monday = mondayOfIsoWeek(weekEl.value);
+    if (monday) {
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const yr = weekEl.value.split('-W')[0];
+      weekLabel = `${fmt(monday)} – ${fmt(sunday)}, ${yr}`;
+    }
+    document.getElementById('commit-name').textContent = name;
+    document.getElementById('commit-week').textContent = weekLabel;
+  }
+
+  function updateAll() {
+    METRICS.forEach(updateMetricRow);
+    updateSummaryAndCommitment();
+    DAYS.forEach(d => updateLeadGenDay(d.key));
+  }
+
+  /* ────────────────────────── INIT ────────────────────────── */
+
+  buildPage();
+
+  (function setDefaultWeek() {
+    const today = new Date();
+    const yr = today.getFullYear();
+    const start = new Date(yr, 0, 1);
+    const dayOfYear = Math.floor((today - start) / 86400000);
+    const wk = Math.ceil((dayOfYear + start.getDay() + 1) / 7);
+    document.getElementById('week-of').value = `${yr}-W${String(wk).padStart(2, '0')}`;
+  })();
+
+  const recalledName = recallAgentName();
+  if (recalledName) document.getElementById('agent-name').value = recalledName;
+
+  document.getElementById('agent-name').addEventListener('input', updateAll);
+  document.getElementById('agent-name').addEventListener('blur', () => {
+    rememberAgentName(document.getElementById('agent-name').value);
+    refreshForCurrentKey();
+  });
+  document.getElementById('week-of').addEventListener('change', refreshForCurrentKey);
+
+  refreshForCurrentKey();
+</script>
+
+</body>
+</html>
