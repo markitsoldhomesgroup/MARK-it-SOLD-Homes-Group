@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Weekly Goal Sheet – MARK it SOLD</title>
+<script src="vendor/supabase.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
 
   :root {
     --red:      #CE011F;
@@ -79,6 +81,38 @@
   .agent-field input::placeholder { color: rgba(255,255,255,.3); }
   .agent-field input:focus { border-color: var(--red); }
   .agent-field input[type="week"] { color-scheme: dark; }
+  .identity-display {
+    padding: 10px 14px;
+    background: rgba(255,255,255,.08);
+    border: 1.5px solid rgba(255,255,255,.15);
+    border-radius: 6px;
+    font-size: 14px;
+    color: #fff;
+  }
+  .sign-out-row { margin-top: 14px; text-align: right; }
+  .sign-out-row .link-btn { color: #C9C4BF; }
+  .sign-out-row .link-btn:hover { color: #fff; }
+
+  /* ── AUTH GATE ── */
+  .auth-gate { max-width: 420px; margin: 60px auto; padding: 0 20px; }
+  .auth-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 28px 26px; }
+  .auth-status { text-align: center; color: var(--mid); font-size: 14px; }
+  .auth-title { font-family: Georgia, 'Times New Roman', serif; font-size: 19px; color: var(--dark); margin-bottom: 14px; }
+  .auth-form { display: flex; flex-direction: column; gap: 14px; }
+  .auth-label { display: flex; flex-direction: column; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--mid); }
+  .auth-label input {
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--dark);
+  }
+  .auth-error { background: var(--red-soft); color: var(--red); font-size: 12.5px; font-weight: 600; padding: 8px 10px; border-radius: 6px; }
+  .auth-success { background: var(--green-bg); color: var(--green); font-size: 12.5px; font-weight: 600; padding: 8px 10px; border-radius: 6px; }
+  .auth-help { font-size: 12.5px; color: var(--mid); margin-top: -6px; }
+  .link-btn { background: none; border: none; color: var(--red); font-size: 12.5px; font-weight: 600; cursor: pointer; text-align: center; padding: 4px 0; font-family: inherit; }
+  .link-btn:hover { text-decoration: underline; }
 
   /* ── CONTENT ── */
   .content { max-width: 720px; margin: 0 auto; padding: 36px 28px 80px; }
@@ -392,20 +426,59 @@
   <div class="header-inner">
     <div class="header-eyebrow">MARK it SOLD Homes Group &nbsp;·&nbsp; Keller Williams Local</div>
     <h1 class="header-title"><em>Weekly Goal Sheet</em><br>Set Your Intentions Before the Week Begins</h1>
-    <div class="agent-row">
-      <div class="agent-field">
-        <label>Agent Name</label>
-        <input type="text" id="agent-name" placeholder="Your full name">
+    <div id="header-authed" hidden>
+      <div class="agent-row">
+        <div class="agent-field">
+          <label>Agent</label>
+          <div class="identity-display" id="agent-name-display">—</div>
+        </div>
+        <div class="agent-field">
+          <label>Week Of</label>
+          <input type="week" id="week-of">
+        </div>
       </div>
-      <div class="agent-field">
-        <label>Week Of</label>
-        <input type="week" id="week-of">
+      <div class="sign-out-row">
+        <button type="button" class="link-btn" id="sign-out-btn">Sign Out</button>
       </div>
     </div>
   </div>
 </div>
 
-<div class="content">
+<!-- AUTH GATE -->
+<div id="auth-gate" class="auth-gate">
+  <div class="auth-card">
+    <div id="auth-loading" class="auth-status">Loading…</div>
+
+    <form id="signin-form" class="auth-form" hidden>
+      <div class="auth-title">Sign In</div>
+      <label class="auth-label">Email<input type="email" id="signin-email" required autocomplete="username"></label>
+      <label class="auth-label">Password<input type="password" id="signin-password" required autocomplete="current-password"></label>
+      <div class="auth-error" id="signin-error" hidden></div>
+      <button type="submit" class="btn btn-primary">Sign In</button>
+      <button type="button" class="link-btn" id="forgot-password-btn">First time signing in, or forgot your password?</button>
+    </form>
+
+    <form id="reset-request-form" class="auth-form" hidden>
+      <div class="auth-title">Set / Reset Password</div>
+      <div class="auth-help">Enter your email — we'll send you a link to set your password.</div>
+      <label class="auth-label">Email<input type="email" id="reset-email" required autocomplete="username"></label>
+      <div class="auth-error" id="reset-error" hidden></div>
+      <div class="auth-success" id="reset-success" hidden>Check your email for a link to set your password.</div>
+      <button type="submit" class="btn btn-primary">Send Reset Link</button>
+      <button type="button" class="link-btn" id="back-to-signin-btn">Back to Sign In</button>
+    </form>
+
+    <form id="set-password-form" class="auth-form" hidden>
+      <div class="auth-title">Set Your Password</div>
+      <div class="auth-help">Choose a password for your account.</div>
+      <label class="auth-label">New Password<input type="password" id="new-password" required minlength="8" autocomplete="new-password"></label>
+      <div class="auth-error" id="setpw-error" hidden></div>
+      <button type="submit" class="btn btn-primary">Save Password &amp; Continue</button>
+    </form>
+  </div>
+</div>
+
+<div class="content" id="app-content" hidden>
 
   <!-- LEAD GENERATION TRACKER -->
   <div class="goal-section">
@@ -471,12 +544,22 @@
   </div>
 
   <div class="storage-note">
-    Goals and progress are saved in this browser only — they don't sync across devices. Monthly totals combine every week saved under the exact same agent name in this browser.
+    Your goals and progress are saved securely to your account and visible to your team — only you can edit your own numbers.
   </div>
 
 </div>
 
 <script>
+  /* ────────────────────────── SUPABASE ────────────────────────── */
+
+  const SUPABASE_URL = 'https://tynazouokdvrxmlbascr.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_Jx6l5W3SqpJDjp-9ZS7Q0Q_DupPiw0v';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+  let agentFullName = '';
+  let cache = { weeklyRecords: {}, monthlyGoals: {} };
+
   /* ────────────────────────── DATA MODEL ────────────────────────── */
 
   const METRICS = [
@@ -812,20 +895,9 @@
     }
   }
 
-  /* ────────────────────────── PERSISTENCE (localStorage) ────────────────────────── */
+  /* ────────────────────────── PERSISTENCE (Supabase, cached locally per agent) ────────────────────────── */
 
-  function slugify(name) {
-    const s = (name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    return s || 'unassigned';
-  }
-
-  function currentAgentSlug() { return slugify(document.getElementById('agent-name').value); }
   function currentWeekValue() { return document.getElementById('week-of').value; }
-  function storageKey(slug, week) { return `wgs:v1:${slug}:${week}`; }
-
-  const MONTHLY_GOAL_PREFIX = 'wgsmgoal:v1:';
-  function monthlyGoalStorageKey(slug, yearMonth) { return `${MONTHLY_GOAL_PREFIX}${slug}:${yearMonth}`; }
-  function yearMonthKey(monday) { return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}`; }
 
   function mondayOfIsoWeek(weekStr) {
     if (!weekStr || weekStr.indexOf('-W') === -1) return null;
@@ -841,6 +913,8 @@
     monday.setDate(week1Monday.getDate() + (week - 1) * 7);
     return monday;
   }
+
+  function yearMonthKey(monday) { return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}`; }
 
   function monthWeekInfo(monday) {
     const year = monday.getFullYear(), month = monday.getMonth();
@@ -873,10 +947,8 @@
       locked: comboWeeklyGoalEl.readOnly,
     };
     return {
-      v: 1,
-      agentName: document.getElementById('agent-name').value,
+      agentName: agentFullName,
       week: currentWeekValue(),
-      updatedAt: Date.now(),
       metrics,
       combo,
       leadGen: JSON.parse(JSON.stringify(state.leadGen)),
@@ -884,39 +956,34 @@
   }
 
   function saveRecord() {
-    try {
-      const week = currentWeekValue();
-      if (!week) return;
-      const slug = currentAgentSlug();
-      localStorage.setItem(storageKey(slug, week), JSON.stringify(buildRecordFromDOM()));
-    } catch (e) { /* localStorage unavailable — degrade silently for this session */ }
+    const week = currentWeekValue();
+    if (!week || !currentUser) return;
+    const record = buildRecordFromDOM();
+    cache.weeklyRecords[week] = record; // optimistic local update so the UI stays instant
+    sb.from('weekly_records').upsert({
+      agent_id: currentUser.id,
+      iso_week: week,
+      metrics: record.metrics,
+      combo: record.combo,
+      lead_gen: record.leadGen,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'agent_id,iso_week' }).then(({ error }) => {
+      if (error) console.error('Failed to save weekly record:', error.message);
+    });
   }
 
-  function loadRecord(slug, week) {
-    try {
-      const raw = localStorage.getItem(storageKey(slug, week));
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
+  function loadRecord(week) {
+    return cache.weeklyRecords[week] || null;
   }
 
-  function findMostRecentOtherRecord(slug, excludeWeek) {
+  function findMostRecentOtherRecord(excludeWeek) {
     let best = null, bestMonday = null;
-    try {
-      const prefix = `wgs:v1:${slug}:`;
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!k || k.indexOf(prefix) !== 0) continue;
-        const week = k.slice(prefix.length);
-        if (week === excludeWeek) continue;
-        const raw = localStorage.getItem(k);
-        if (!raw) continue;
-        let rec;
-        try { rec = JSON.parse(raw); } catch (e) { continue; }
-        const monday = mondayOfIsoWeek(week);
-        if (!monday) continue;
-        if (!bestMonday || monday > bestMonday) { bestMonday = monday; best = rec; }
-      }
-    } catch (e) { /* ignore */ }
+    Object.keys(cache.weeklyRecords).forEach(week => {
+      if (week === excludeWeek) return;
+      const monday = mondayOfIsoWeek(week);
+      if (!monday) return;
+      if (!bestMonday || monday > bestMonday) { bestMonday = monday; best = cache.weeklyRecords[week]; }
+    });
     return best;
   }
 
@@ -925,24 +992,14 @@
     const monday = mondayOfIsoWeek(week);
     if (!monday) return 0;
     const targetY = monday.getFullYear(), targetM = monday.getMonth();
-    const slug = currentAgentSlug();
-    const prefix = `wgs:v1:${slug}:`;
     let sum = 0;
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!k || k.indexOf(prefix) !== 0) continue;
-        const raw = localStorage.getItem(k);
-        if (!raw) continue;
-        let rec;
-        try { rec = JSON.parse(raw); } catch (e) { continue; }
-        const m = mondayOfIsoWeek(rec.week);
-        if (!m) continue;
-        if (m.getFullYear() === targetY && m.getMonth() === targetM) {
-          sum += (rec.metrics && rec.metrics[key] ? (parseInt(rec.metrics[key].actual) || 0) : 0);
-        }
+    Object.values(cache.weeklyRecords).forEach(rec => {
+      const m = mondayOfIsoWeek(rec.week);
+      if (!m) return;
+      if (m.getFullYear() === targetY && m.getMonth() === targetM) {
+        sum += (rec.metrics && rec.metrics[key] ? (parseInt(rec.metrics[key].actual) || 0) : 0);
       }
-    } catch (e) { /* ignore */ }
+    });
     return sum;
   }
 
@@ -951,26 +1008,16 @@
     const monday = mondayOfIsoWeek(week);
     if (!monday) return 0;
     const targetY = monday.getFullYear(), targetM = monday.getMonth();
-    const slug = currentAgentSlug();
-    const prefix = `wgs:v1:${slug}:`;
     let sum = 0;
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!k || k.indexOf(prefix) !== 0) continue;
-        const raw = localStorage.getItem(k);
-        if (!raw) continue;
-        let rec;
-        try { rec = JSON.parse(raw); } catch (e) { continue; }
-        const m = mondayOfIsoWeek(rec.week);
-        if (!m) continue;
-        if (m.getFullYear() === targetY && m.getMonth() === targetM && rec.metrics) {
-          const cv = rec.metrics.twoWayConversations ? (parseInt(rec.metrics.twoWayConversations.actual) || 0) : 0;
-          const tx = rec.metrics.twoWayTexts ? (parseInt(rec.metrics.twoWayTexts.actual) || 0) : 0;
-          sum += cv + tx;
-        }
+    Object.values(cache.weeklyRecords).forEach(rec => {
+      const m = mondayOfIsoWeek(rec.week);
+      if (!m || !rec.metrics) return;
+      if (m.getFullYear() === targetY && m.getMonth() === targetM) {
+        const cv = rec.metrics.twoWayConversations ? (parseInt(rec.metrics.twoWayConversations.actual) || 0) : 0;
+        const tx = rec.metrics.twoWayTexts ? (parseInt(rec.metrics.twoWayTexts.actual) || 0) : 0;
+        sum += cv + tx;
       }
-    } catch (e) { /* ignore */ }
+    });
     return sum;
   }
 
@@ -979,33 +1026,21 @@
     const monday = mondayOfIsoWeek(week);
     if (!monday) return 0;
     const targetY = monday.getFullYear(), targetM = monday.getMonth();
-    const slug = currentAgentSlug();
-    const prefix = `wgs:v1:${slug}:`;
     let sum = 0;
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!k || k.indexOf(prefix) !== 0) continue;
-        const raw = localStorage.getItem(k);
-        if (!raw) continue;
-        let rec;
-        try { rec = JSON.parse(raw); } catch (e) { continue; }
-        const m = mondayOfIsoWeek(rec.week);
-        if (!m) continue;
-        if (m.getFullYear() === targetY && m.getMonth() === targetM && m.getTime() < monday.getTime()) {
-          sum += (rec.combo ? (parseInt(rec.combo.weeklyGoal) || 0) : 0);
-        }
+    Object.values(cache.weeklyRecords).forEach(rec => {
+      const m = mondayOfIsoWeek(rec.week);
+      if (!m) return;
+      if (m.getFullYear() === targetY && m.getMonth() === targetM && m.getTime() < monday.getTime()) {
+        sum += (rec.combo ? (parseInt(rec.combo.weeklyGoal) || 0) : 0);
       }
-    } catch (e) { /* ignore */ }
+    });
     return sum;
   }
 
   function buildCarriedRecord(prev, week) {
     const record = {
-      v: 1,
-      agentName: document.getElementById('agent-name').value,
+      agentName: agentFullName,
       week,
-      updatedAt: 0,
       metrics: {},
       combo: { weeklyGoal: '', locked: false },
       leadGen: blankLeadGen(),
@@ -1024,18 +1059,7 @@
     return record;
   }
 
-  const LAST_AGENT_KEY = 'wgs:lastAgentName';
-
-  function rememberAgentName(name) {
-    try { localStorage.setItem(LAST_AGENT_KEY, name || ''); } catch (e) { /* ignore */ }
-  }
-
-  function recallAgentName() {
-    try { return localStorage.getItem(LAST_AGENT_KEY) || ''; } catch (e) { return ''; }
-  }
-
   function applyRecordToDOM(record) {
-    if (record.agentName) document.getElementById('agent-name').value = record.agentName;
     METRICS.forEach(m => {
       const row = getRow(m.key);
       const countEl = row.querySelector('[data-role="count"]');
@@ -1069,54 +1093,41 @@
     });
     const comboEl = document.querySelector('[data-role="combo-monthly-goal"]');
     const combo = { goal: comboEl.value === '' ? '' : (parseInt(comboEl.value) || 0), locked: comboEl.readOnly };
-    return {
-      v: 1,
-      agentName: document.getElementById('agent-name').value,
-      yearMonth,
-      updatedAt: Date.now(),
-      metrics,
-      combo,
-    };
+    return { agentName: agentFullName, yearMonth, metrics, combo };
   }
 
   function saveMonthlyGoalRecord() {
-    try {
-      const monday = mondayOfIsoWeek(currentWeekValue());
-      if (!monday) return;
-      const ym = yearMonthKey(monday);
-      const slug = currentAgentSlug();
-      localStorage.setItem(monthlyGoalStorageKey(slug, ym), JSON.stringify(buildMonthlyGoalRecordFromDOM(ym)));
-    } catch (e) { /* ignore */ }
+    const monday = mondayOfIsoWeek(currentWeekValue());
+    if (!monday || !currentUser) return;
+    const ym = yearMonthKey(monday);
+    const record = buildMonthlyGoalRecordFromDOM(ym);
+    cache.monthlyGoals[ym] = record; // optimistic
+    sb.from('monthly_goals').upsert({
+      agent_id: currentUser.id,
+      year_month: ym,
+      metrics: record.metrics,
+      combo: record.combo,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'agent_id,year_month' }).then(({ error }) => {
+      if (error) console.error('Failed to save monthly goal record:', error.message);
+    });
   }
 
-  function loadMonthlyGoalRecord(slug, yearMonth) {
-    try {
-      const raw = localStorage.getItem(monthlyGoalStorageKey(slug, yearMonth));
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
+  function loadMonthlyGoalRecord(yearMonth) {
+    return cache.monthlyGoals[yearMonth] || null;
   }
 
-  function findMostRecentOtherMonthlyGoalRecord(slug, excludeYearMonth) {
+  function findMostRecentOtherMonthlyGoalRecord(excludeYearMonth) {
     let best = null, bestYm = null;
-    try {
-      const prefix = `${MONTHLY_GOAL_PREFIX}${slug}:`;
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!k || k.indexOf(prefix) !== 0) continue;
-        const ym = k.slice(prefix.length);
-        if (ym === excludeYearMonth) continue;
-        const raw = localStorage.getItem(k);
-        if (!raw) continue;
-        let rec;
-        try { rec = JSON.parse(raw); } catch (e) { continue; }
-        if (!bestYm || ym > bestYm) { bestYm = ym; best = rec; }
-      }
-    } catch (e) { /* ignore */ }
+    Object.keys(cache.monthlyGoals).forEach(ym => {
+      if (ym === excludeYearMonth) return;
+      if (!bestYm || ym > bestYm) { bestYm = ym; best = cache.monthlyGoals[ym]; }
+    });
     return best;
   }
 
   function buildCarriedMonthlyGoalRecord(prev, yearMonth) {
-    const record = { v: 1, agentName: document.getElementById('agent-name').value, yearMonth, updatedAt: 0, metrics: {}, combo: { goal: '', locked: false } };
+    const record = { agentName: agentFullName, yearMonth, metrics: {}, combo: { goal: '', locked: false } };
     METRICS.filter(m => m.goaled).forEach(m => {
       const prevGoal = prev && prev.metrics && prev.metrics[m.key] ? prev.metrics[m.key].goal : '';
       record.metrics[m.key] = { goal: (prevGoal === '' || prevGoal == null) ? '' : prevGoal, locked: false };
@@ -1144,29 +1155,27 @@
     const monday = mondayOfIsoWeek(currentWeekValue());
     if (!monday) return;
     const ym = yearMonthKey(monday);
-    const slug = currentAgentSlug();
-    const existing = loadMonthlyGoalRecord(slug, ym);
+    const existing = loadMonthlyGoalRecord(ym);
     if (existing) {
       applyMonthlyGoalRecordToDOM(existing);
     } else {
-      const prev = findMostRecentOtherMonthlyGoalRecord(slug, ym);
+      const prev = findMostRecentOtherMonthlyGoalRecord(ym);
       applyMonthlyGoalRecordToDOM(buildCarriedMonthlyGoalRecord(prev, ym));
+      saveMonthlyGoalRecord();
     }
-    saveMonthlyGoalRecord();
   }
 
   function refreshForCurrentKey() {
     const week = currentWeekValue();
-    if (!week) { updateAll(); return; }
-    const slug = currentAgentSlug();
-    const existing = loadRecord(slug, week);
+    if (!week || !currentUser) { updateAll(); return; }
+    const existing = loadRecord(week);
     if (existing) {
       applyRecordToDOM(existing);
     } else {
-      const prev = findMostRecentOtherRecord(slug, week);
+      const prev = findMostRecentOtherRecord(week);
       applyRecordToDOM(buildCarriedRecord(prev, week));
+      saveRecord();
     }
-    saveRecord();
     refreshMonthlyGoalsForCurrentMonth();
     updateAll();
   }
@@ -1174,8 +1183,7 @@
   function resetWeek() {
     if (!confirm("Start a fresh week? This clears this week's counts and lead-gen times. Weekly goals carry over from last week, unlocked so you can confirm or tweak them. Monthly goals are untouched.")) return;
     const week = currentWeekValue();
-    const slug = currentAgentSlug();
-    const prev = findMostRecentOtherRecord(slug, week);
+    const prev = findMostRecentOtherRecord(week);
     applyRecordToDOM(buildCarriedRecord(prev, week));
     saveRecord();
     updateAll();
@@ -1279,7 +1287,7 @@
     document.getElementById('sum-appts').textContent = val('appointmentsSet');
     document.getElementById('sum-referrals').textContent = val('referralsGiven');
 
-    const name = document.getElementById('agent-name').value.trim() || '_______________';
+    const name = agentFullName || '_______________';
     const weekEl = document.getElementById('week-of');
     let weekLabel = '_______________';
     const monday = mondayOfIsoWeek(weekEl.value);
@@ -1301,30 +1309,150 @@
     DAYS.forEach(d => updateLeadGenDay(d.key));
   }
 
-  /* ────────────────────────── INIT ────────────────────────── */
+  /* ────────────────────────── AUTH ────────────────────────── */
 
-  buildPage();
+  function showGate(view) {
+    document.getElementById('auth-gate').hidden = false;
+    document.getElementById('app-content').hidden = true;
+    document.getElementById('header-authed').hidden = true;
+    document.getElementById('auth-loading').hidden = view !== 'loading';
+    document.getElementById('signin-form').hidden = view !== 'signin';
+    document.getElementById('reset-request-form').hidden = view !== 'reset';
+    document.getElementById('set-password-form').hidden = view !== 'setpw';
+  }
 
-  (function setDefaultWeek() {
-    const today = new Date();
-    const yr = today.getFullYear();
-    const start = new Date(yr, 0, 1);
-    const dayOfYear = Math.floor((today - start) / 86400000);
-    const wk = Math.ceil((dayOfYear + start.getDay() + 1) / 7);
-    document.getElementById('week-of').value = `${yr}-W${String(wk).padStart(2, '0')}`;
-  })();
+  function showApp() {
+    document.getElementById('auth-gate').hidden = true;
+    document.getElementById('app-content').hidden = false;
+    document.getElementById('header-authed').hidden = false;
+  }
 
-  const recalledName = recallAgentName();
-  if (recalledName) document.getElementById('agent-name').value = recalledName;
+  async function loadAgentProfile(userId, userEmail) {
+    const { data } = await sb.from('agents').select('full_name').eq('id', userId).maybeSingle();
+    agentFullName = (data && data.full_name) || userEmail || 'Agent';
+    document.getElementById('agent-name-display').textContent = agentFullName;
+  }
 
-  document.getElementById('agent-name').addEventListener('input', updateAll);
-  document.getElementById('agent-name').addEventListener('blur', () => {
-    rememberAgentName(document.getElementById('agent-name').value);
+  async function loadAgentCache(userId) {
+    const [wr, mg] = await Promise.all([
+      sb.from('weekly_records').select('*').eq('agent_id', userId),
+      sb.from('monthly_goals').select('*').eq('agent_id', userId),
+    ]);
+    cache.weeklyRecords = {};
+    (wr.data || []).forEach(row => {
+      cache.weeklyRecords[row.iso_week] = {
+        agentName: agentFullName,
+        week: row.iso_week,
+        metrics: row.metrics || {},
+        combo: row.combo || {},
+        leadGen: row.lead_gen || {},
+      };
+    });
+    cache.monthlyGoals = {};
+    (mg.data || []).forEach(row => {
+      cache.monthlyGoals[row.year_month] = {
+        agentName: agentFullName,
+        yearMonth: row.year_month,
+        metrics: row.metrics || {},
+        combo: row.combo || {},
+      };
+    });
+  }
+
+  async function handleSignedIn(user) {
+    currentUser = user;
+    showGate('loading');
+    await loadAgentProfile(user.id, user.email);
+    await loadAgentCache(user.id);
+    showApp();
+    if (!document.getElementById('week-of').value) {
+      (function setDefaultWeek() {
+        const today = new Date();
+        const yr = today.getFullYear();
+        const start = new Date(yr, 0, 1);
+        const dayOfYear = Math.floor((today - start) / 86400000);
+        const wk = Math.ceil((dayOfYear + start.getDay() + 1) / 7);
+        document.getElementById('week-of').value = `${yr}-W${String(wk).padStart(2, '0')}`;
+      })();
+    }
     refreshForCurrentKey();
+  }
+
+  function handleSignedOut() {
+    currentUser = null;
+    agentFullName = '';
+    cache = { weeklyRecords: {}, monthlyGoals: {} };
+    document.getElementById('signin-email').value = '';
+    document.getElementById('signin-password').value = '';
+    showGate('signin');
+  }
+
+  function urlIndicatesPasswordSetup() {
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    return /type=recovery|type=invite/.test(hash) || /type=recovery|type=invite/.test(search);
+  }
+
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') { handleSignedOut(); return; }
+    if (event === 'PASSWORD_RECOVERY' || (session && urlIndicatesPasswordSetup())) {
+      if (session) currentUser = session.user;
+      showGate('setpw');
+      return;
+    }
+    if (session && session.user) {
+      handleSignedIn(session.user);
+    } else {
+      showGate('signin');
+    }
   });
+
+  document.getElementById('signin-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('signin-email').value.trim();
+    const password = document.getElementById('signin-password').value;
+    const errEl = document.getElementById('signin-error');
+    errEl.hidden = true;
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) { errEl.textContent = error.message; errEl.hidden = false; }
+  });
+
+  document.getElementById('forgot-password-btn').addEventListener('click', () => showGate('reset'));
+  document.getElementById('back-to-signin-btn').addEventListener('click', () => showGate('signin'));
+
+  document.getElementById('reset-request-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('reset-email').value.trim();
+    const errEl = document.getElementById('reset-error');
+    const okEl = document.getElementById('reset-success');
+    errEl.hidden = true; okEl.hidden = true;
+    const redirectTo = window.location.origin + window.location.pathname;
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) { errEl.textContent = error.message; errEl.hidden = false; }
+    else { okEl.hidden = false; }
+  });
+
+  document.getElementById('set-password-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const pw = document.getElementById('new-password').value;
+    const errEl = document.getElementById('setpw-error');
+    errEl.hidden = true;
+    const { data, error } = await sb.auth.updateUser({ password: pw });
+    if (error) { errEl.textContent = error.message; errEl.hidden = false; return; }
+    history.replaceState(null, '', window.location.pathname);
+    if (data && data.user) handleSignedIn(data.user);
+  });
+
+  document.getElementById('sign-out-btn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+  });
+
   document.getElementById('week-of').addEventListener('change', refreshForCurrentKey);
 
-  refreshForCurrentKey();
+  /* ────────────────────────── INIT ────────────────────────── */
+
+  showGate('loading');
+  buildPage();
 </script>
 
 </body>
