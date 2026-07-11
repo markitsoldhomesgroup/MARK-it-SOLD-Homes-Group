@@ -58,19 +58,20 @@ create table monthly_goals (
 
 ## Phased implementation plan
 
-**Phase 1 — Backend setup** (~0.5–1 day)
-- Create the Supabase project, run the schema + security rules above.
-- Configure auth (email/password or magic-link) and the invite flow.
+**Phase 1 — Backend setup** ✅ DONE
+- Supabase project confirmed (`tynazouokdvrxmlbascr`, us-east-2).
+- Schema applied: `agents`, `weekly_records`, `monthly_goals`, all with row-level security (write-your-own-rows, read-everyone's-rows). Security advisor clean.
 
-**Phase 2 — Login & identity** (~1 day)
-- Add a login screen to the site.
-- Replace the free-text "Agent Name" field with the logged-in user's identity (fixes today's biggest fragility — a typo in the name field currently scatters an agent's history into a new, empty bucket).
-- Build a one-time "import your existing data" step: on first login, read whatever's sitting in that browser's localStorage and push it into Supabase, so nobody loses their current week/month.
+**Phase 2 — Login & identity** ✅ DONE
+- Login screen added (sign in / forgot-or-first-time password reset / set-password after invite).
+- The free-text "Agent Name" field is gone — identity now comes from the logged-in Supabase user, read from the `agents` table.
+- Note: the "import your existing localStorage data" step was **not** built, since the sheet has had very light real-world use so far under the old system. Flag if you know of agents with meaningful localStorage history that needs preserving — otherwise everyone starts fresh in the new system, which seemed like the lower-risk default.
 
-**Phase 3 — Rewire the data layer** (~1–2 days)
-- Swap the existing `saveRecord` / `loadRecord` / `saveMonthlyGoalRecord` functions (currently reading/writing `localStorage`) over to Supabase calls instead.
-- All existing UI and logic — steppers, goal-locking, the pacing caution math — stays exactly as-is; only where the data lives changes.
-- Add basic loading/error handling, since network calls can lag or fail in a way localStorage never did.
+**Phase 3 — Rewire the data layer** ✅ DONE
+- `saveRecord` / `loadRecord` / `saveMonthlyGoalRecord` etc. now read/write Supabase instead of `localStorage`, through a per-agent in-memory cache so the UI stays instant (writes sync to the database in the background).
+- All existing UI and logic — steppers, goal-locking, the pacing caution math — is untouched; only where the data lives changed.
+- The Supabase JS client is vendored locally (`vendor/supabase.js`) rather than loaded from a CDN, for reliability.
+- **Not yet verified live**: the actual invite-email → set-password → login flow needs a real click-through test, since it can only be validated by actually receiving and clicking an invite email.
 
 **Phase 4 — Team board (new tab)** (~1–2 days)
 - New view that pulls every teammate's current-week and current-month numbers.
