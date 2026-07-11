@@ -50,11 +50,11 @@ create table monthly_goals (
 - Every table restricts INSERT/UPDATE to `agent_id = auth.uid()` — an agent can only ever write their own numbers.
 - SELECT is open to everyone on the same `team_id` — this is what makes the Team tab work, since every agent needs to read every other agent's current numbers.
 
-## Phase 0 — Decisions to confirm before starting
+## Phase 0 — Decisions (confirmed)
 
-1. **Visibility**: based on how you described it ("each agent... a tab to see how the other agents are doing"), I'm planning for **every agent to see everyone's status** — not just managers. Flag me if you want it restricted (e.g., only managers see the full team, agents only see their own rank or a blinded leaderboard).
-2. **Account creation**: I'd recommend **admin-invited accounts** (you or a manager sends each agent an invite email from the Supabase dashboard — no signup form for randoms to stumble into) rather than open self-signup.
-3. **Single team or multiple**: is this one office/team, or should the schema support multiple teams/offices from day one? (Easy to support either way — just changes a default value — better to decide now.)
+1. **Visibility**: ✅ Full team-wide visibility — every agent can see every other agent's status on the Team board, not just managers.
+2. **Account creation**: ✅ Admin-invited — you or a manager sends each agent an invite email from the Supabase dashboard. No public signup form.
+3. **Team scope**: ✅ Single team — everyone using the tool is on one team and sees each other on the board. No multi-office grouping needed.
 
 ## Phased implementation plan
 
