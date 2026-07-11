@@ -96,6 +96,20 @@
   .section-label { font-family: Georgia, 'Times New Roman', serif; font-size: 17px; color: var(--dark); }
   .section-sub { font-size: 11.5px; color: var(--mid); margin-top: 1px; }
 
+  /* Hero styling for Core Success Metrics */
+  .goal-section--hero .section-label { color: var(--red); font-size: 19px; }
+  .goal-section--hero .metric-card { border: 2px solid var(--red); box-shadow: 0 2px 12px rgba(206,1,31,.07); }
+  .goal-section--hero .metric-name { font-size: 15px; }
+
+  /* Quiet styling for Supporting Activities */
+  .goal-section--supporting .section-icon { background: var(--mid); }
+  .goal-section--supporting .section-label { color: var(--mid); font-size: 15px; }
+  .goal-section--supporting .metric-card { background: #FAFAF8; }
+  .goal-section--supporting .metric-name { font-weight: 500; color: var(--body); font-size: 13.5px; }
+  .goal-section--supporting .metric-hint { font-size: 11px; }
+  .goal-section--supporting .stepper button { width: 32px; height: 36px; font-size: 16px; }
+  .goal-section--supporting .stepper input { width: 44px; height: 36px; font-size: 14px; }
+
   /* ── METRIC CARD / ROWS ── */
   .metric-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
   .metric-row {
@@ -184,7 +198,7 @@
     text-transform: uppercase;
     color: var(--mid);
   }
-  .goal-field input, .goal-field output {
+  .goal-field input {
     width: 72px;
     padding: 6px 8px;
     border: 1.5px solid var(--border);
@@ -200,7 +214,6 @@
   .goal-field input::-webkit-inner-spin-button,
   .goal-field input::-webkit-outer-spin-button { -webkit-appearance: none; }
   .goal-field input.locked { background: var(--ground); color: var(--mid); cursor: not-allowed; }
-  .goal-field--derived output { background: var(--ground); color: var(--mid); display: inline-block; }
   .pct-badge {
     display: inline-flex;
     align-items: center;
@@ -212,6 +225,39 @@
     color: var(--body);
     font-size: 14px;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .goal-caution {
+    flex-basis: 100%;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--red);
+    background: var(--red-soft);
+    border-radius: 6px;
+    padding: 8px 10px;
+    line-height: 1.4;
+  }
+
+  /* ── COMBINED CONVERSATIONS GOAL CARD ── */
+  .combo-card {
+    background: var(--surface);
+    border: 2px solid var(--red);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(206,1,31,.07);
+  }
+  .combo-title { font-family: Georgia, 'Times New Roman', serif; font-size: 16px; color: var(--dark); margin-bottom: 2px; }
+  .combo-sub { font-size: 11.5px; color: var(--mid); margin-bottom: 14px; }
+  .combo-goals { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px 20px; margin-bottom: 12px; }
+  .combo-progress {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--dark);
+    background: var(--ground);
+    border-radius: 6px;
+    padding: 9px 12px;
+    margin-bottom: 4px;
     font-variant-numeric: tabular-nums;
   }
 
@@ -331,6 +377,7 @@
     .summary-grid { grid-template-columns: 1fr 1fr; }
     .metric-goals { gap: 8px 12px; }
     .goal-field, .goal-stat { font-size: 10px; }
+    .combo-goals { gap: 8px 12px; }
   }
 </style>
 </head>
@@ -375,7 +422,7 @@
     </div>
   </div>
 
-  <!-- METRIC SECTIONS (Prospecting / Leads & Appointments / Referrals & Reviews) -->
+  <!-- METRIC SECTIONS (Core Success Metrics / Supporting Activities) -->
   <div data-role="sections-container"></div>
 
   <!-- SUMMARY -->
@@ -388,7 +435,7 @@
       </div>
       <div class="summary-item">
         <div class="summary-num" id="sum-convos">0</div>
-        <div class="summary-label">Conversations</div>
+        <div class="summary-label">Two-Way Conversations</div>
       </div>
       <div class="summary-item">
         <div class="summary-num" id="sum-touches">0</div>
@@ -433,26 +480,34 @@
   /* ────────────────────────── DATA MODEL ────────────────────────── */
 
   const METRICS = [
-    { key: 'callsMade',        name: 'Calls Made',           hint: 'Total outbound calls placed to prospects, past clients, and database', section: 'prospecting', daily: true },
-    { key: 'conversationsHad', name: 'Conversations Had',    hint: 'Meaningful two-way conversations — not voicemails',                      section: 'prospecting', daily: true },
-    { key: 'textsSent',        name: 'Texts Sent',           hint: 'Personalized texts to leads or past clients',                            section: 'prospecting', daily: true },
-    { key: 'emailsSent',       name: 'Emails Sent',          hint: 'Outreach emails — not mass sends',                                       section: 'prospecting', daily: true },
-    { key: 'databaseTouches',  name: 'Database Touches',     hint: 'Any contact with a person in your sphere — call, text, email, or note',  section: 'prospecting', daily: true },
-    { key: 'socialEngagement', name: 'FB/IG Engagement',     hint: 'Minutes spent intentionally engaging on social media — comments, DMs, stories', section: 'prospecting', daily: true, dailyUnit: ' min/day', step: 5 },
-    { key: 'leadsGenerated',   name: 'Leads Generated',      hint: 'New buyer or seller leads added to your pipeline this week',             section: 'leads' },
-    { key: 'appointmentsSet', name: 'Appointments Set',      hint: 'Listing appointments, buyer consultations, or strategy sessions booked', section: 'leads' },
-    { key: 'appointmentsHeld', name: 'Appointments Held',    hint: 'Appointments that actually happened — measures show rate',               section: 'leads' },
-    { key: 'openHouses',       name: 'Open Houses',          hint: 'Open houses planned for the week — great lead gen opportunity',          section: 'leads' },
-    { key: 'referralsGiven',  name: 'Referrals Given',       hint: 'Clients or contacts referred out to other agents or professionals',      section: 'referrals' },
-    { key: 'referralsReceived', name: 'Referrals Received',  hint: 'Warm leads sent to you by someone in your network',                      section: 'referrals' },
-    { key: 'reviewsRequested', name: 'Reviews Requested',    hint: 'Google or Zillow review requests sent to past clients',                  section: 'referrals' },
-    { key: 'reviewsReceived', name: 'Reviews Received',      hint: 'New 5-star reviews posted this week — goal is to get at least one',      section: 'referrals' },
+    // Core Success Metrics — combined pair (no individual goal fields; feed the shared combo goal card)
+    { key: 'twoWayConversations', name: 'Two-Way Conversations', hint: 'A real back-and-forth — phone, in-person, anywhere real estate comes up and they know you’re an agent', section: 'core', daily: true, combined: true },
+    { key: 'twoWayTexts',         name: 'Two-Way Text Conversations', hint: 'An actual exchange — they replied, not just a text you sent', section: 'core', daily: true, combined: true },
+
+    // Core Success Metrics — each with its own individual weekly + monthly goal
+    { key: 'leadsGenerated',       name: 'Leads Generated',          hint: 'New buyer or seller leads added to your pipeline this period',       section: 'core', goaled: true },
+    { key: 'appointmentsSet',      name: 'Appointments Set',         hint: 'Listing appointments, buyer consultations, or strategy sessions booked', section: 'core', goaled: true },
+    { key: 'appointmentsHeld',     name: 'Appointments Held',        hint: 'Appointments that actually happened — measures show rate',           section: 'core', goaled: true },
+    { key: 'listingsTaken',        name: 'Listings Taken',           hint: 'Signed listing agreements this period',                              section: 'core', goaled: true },
+    { key: 'buyerAgreementsSigned', name: 'Buyer Agreements Signed', hint: 'Signed buyer representation agreements this period',                 section: 'core', goaled: true },
+    { key: 'contractsWritten',     name: 'Contracts Written / Offers Submitted', hint: 'Purchase agreements or offers submitted, either side of the transaction', section: 'core', goaled: true },
+    { key: 'closings',             name: 'Closings',                 hint: 'Transactions that actually closed this period',                     section: 'core', goaled: true },
+
+    // Supporting Activities — plain counts only, tracked for visibility, not part of the weekly goal
+    { key: 'callsMade',        name: 'Calls Made',       hint: 'Total outbound calls placed to prospects, past clients, and database', section: 'supporting', daily: true },
+    { key: 'emailsSent',       name: 'Emails Sent',      hint: 'Outreach emails — not mass sends',                                     section: 'supporting', daily: true },
+    { key: 'databaseTouches',  name: 'Database Touches', hint: 'Any contact with a person in your sphere — call, text, email, or note', section: 'supporting', daily: true },
+    { key: 'socialEngagement', name: 'FB/IG Engagement', hint: 'Minutes spent intentionally engaging on social media — good for brand awareness, not a lead-gen goal', section: 'supporting', daily: true, dailyUnit: ' min/day', step: 5 },
+    { key: 'openHouses',       name: 'Open Houses',      hint: 'Open houses planned for the week',                                     section: 'supporting' },
+    { key: 'referralsGiven',  name: 'Referrals Given',   hint: 'Clients or contacts referred out to other agents or professionals',      section: 'supporting' },
+    { key: 'referralsReceived', name: 'Referrals Received', hint: 'Warm leads sent to you by someone in your network',                   section: 'supporting' },
+    { key: 'reviewsRequested', name: 'Reviews Requested', hint: 'Google or Zillow review requests sent to past clients',                 section: 'supporting' },
+    { key: 'reviewsReceived', name: 'Reviews Received',  hint: 'New 5-star reviews posted this week',                                   section: 'supporting' },
   ];
 
   const SECTIONS = [
-    { key: 'prospecting', icon: '📞', label: 'Prospecting',            sub: 'Daily activities — goal shown as weekly total · green badge shows per-day breakdown' },
-    { key: 'leads',       icon: '📅', label: 'Leads &amp; Appointments',    sub: 'Weekly targets — track against these at end of week' },
-    { key: 'referrals',   icon: '🔄', label: 'Referrals &amp; Reviews',    sub: 'Weekly targets — the compounding activities that grow your business long-term' },
+    { key: 'core',       icon: '🎯', label: 'Core Success Metrics', sub: 'What actually moves the needle — track these closely every week', hero: true },
+    { key: 'supporting', icon: '🗂️', label: 'Supporting Activities', sub: 'Good habits worth logging — not part of your weekly goal', hero: false },
   ];
 
   const DAYS = [
@@ -464,7 +519,6 @@
   ];
 
   const LEADGEN_GOAL_MINUTES = 120;
-  const MONTH_MULTIPLIER = 4.33;
 
   let state = { leadGen: blankLeadGen(), leadGenStatusSeen: {} };
 
@@ -476,7 +530,7 @@
 
   /* ────────────────────────── MARKUP BUILDERS ────────────────────────── */
 
-  function metricRowMarkup(m) {
+  function plainRowMarkup(m) {
     const step = m.step || 1;
     const dailyBadge = m.daily
       ? `<span class="daily-badge" data-role="daily-badge">0${m.dailyUnit || '/day'}</span>`
@@ -492,24 +546,67 @@
           <input class="count" type="number" value="0" min="0" inputmode="numeric" data-role="count">
           <button type="button" data-delta="${step}">+</button>
         </div>
+      </div>`;
+  }
+
+  function goaledRowMarkup(m) {
+    const step = m.step || 1;
+    return `
+      <div class="metric-row" data-metric="${m.key}">
+        <div class="metric-info">
+          <div class="metric-name">${m.name}</div>
+          <div class="metric-hint">${m.hint}</div>
+        </div>
+        <div class="stepper">
+          <button type="button" data-delta="-${step}">−</button>
+          <input class="count" type="number" value="0" min="0" inputmode="numeric" data-role="count">
+          <button type="button" data-delta="${step}">+</button>
+        </div>
         <div class="metric-goals">
+          <label class="goal-field">
+            <span>Monthly Goal</span>
+            <input class="monthly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="monthly-goal">
+          </label>
+          <div class="goal-stat"><span>Monthly %</span><span class="pct-badge" data-role="monthly-pct">—</span></div>
           <label class="goal-field">
             <span>Weekly Goal</span>
             <input class="weekly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="weekly-goal">
           </label>
           <div class="goal-stat"><span>Weekly %</span><span class="pct-badge" data-role="weekly-pct">—</span></div>
-          <div class="goal-field goal-field--derived">
-            <span>Monthly Goal</span>
-            <output class="monthly-goal" data-role="monthly-goal">—</output>
-          </div>
-          <div class="goal-stat"><span>Monthly %</span><span class="pct-badge" data-role="monthly-pct">—</span></div>
         </div>
       </div>`;
   }
 
-  function sectionMarkup(section) {
+  function metricRowMarkup(m) {
+    return m.goaled ? goaledRowMarkup(m) : plainRowMarkup(m);
+  }
+
+  function comboCardMarkup() {
     return `
-      <div class="goal-section" data-section="${section.key}">
+      <div class="combo-card">
+        <div class="combo-title">🎯 Two-Way Conversations Goal</div>
+        <div class="combo-sub">Combined from Two-Way Conversations + Two-Way Text Conversations below</div>
+        <div class="combo-goals">
+          <label class="goal-field">
+            <span>Monthly Goal</span>
+            <input class="monthly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="combo-monthly-goal">
+          </label>
+          <div class="goal-stat"><span>Monthly %</span><span class="pct-badge" data-role="combo-monthly-pct">—</span></div>
+          <label class="goal-field">
+            <span>Weekly Goal</span>
+            <input class="weekly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="combo-weekly-goal">
+          </label>
+          <div class="goal-stat"><span>Weekly %</span><span class="pct-badge" data-role="combo-weekly-pct">—</span></div>
+        </div>
+        <div class="combo-progress" data-role="combo-progress">0 conversations + 0 texts = 0 of 0 this week</div>
+        <div class="goal-caution" data-role="combo-caution" hidden></div>
+      </div>`;
+  }
+
+  function sectionMarkup(section) {
+    const combo = section.key === 'core' ? comboCardMarkup() : '';
+    return `
+      <div class="goal-section ${section.hero ? 'goal-section--hero' : 'goal-section--supporting'}" data-section="${section.key}">
         <div class="section-header">
           <div class="section-icon">${section.icon}</div>
           <div>
@@ -517,6 +614,7 @@
             <div class="section-sub">${section.sub}</div>
           </div>
         </div>
+        ${combo}
         <div class="metric-card" data-role="metric-card"></div>
       </div>`;
   }
@@ -565,18 +663,56 @@
       });
       row.querySelector('[data-role="count"]').addEventListener('input', onDataChanged);
 
-      const goalEl = row.querySelector('[data-role="weekly-goal"]');
-      goalEl.addEventListener('input', updateAll);
-      goalEl.addEventListener('blur', () => {
-        if (!goalEl.readOnly) {
-          const v = parseInt(goalEl.value, 10);
-          if (v > 0) setGoalLocked(goalEl, true);
-        }
-        onDataChanged();
-      });
+      if (m.goaled) {
+        const weeklyGoalEl = row.querySelector('[data-role="weekly-goal"]');
+        weeklyGoalEl.addEventListener('input', updateAll);
+        weeklyGoalEl.addEventListener('blur', () => {
+          if (!weeklyGoalEl.readOnly) {
+            const v = parseInt(weeklyGoalEl.value, 10);
+            if (v > 0) setGoalLocked(weeklyGoalEl, true);
+          }
+          onDataChanged();
+        });
+
+        const monthlyGoalEl = row.querySelector('[data-role="monthly-goal"]');
+        monthlyGoalEl.addEventListener('input', updateAll);
+        monthlyGoalEl.addEventListener('blur', () => {
+          if (!monthlyGoalEl.readOnly) {
+            const v = parseInt(monthlyGoalEl.value, 10);
+            if (v > 0) setGoalLocked(monthlyGoalEl, true);
+          }
+          saveMonthlyGoalRecord();
+          updateAll();
+        });
+      }
     });
 
+    wireComboCard();
     DAYS.forEach(d => renderLeadGenDay(d.key));
+  }
+
+  function wireComboCard() {
+    const monthlyGoalEl = document.querySelector('[data-role="combo-monthly-goal"]');
+    const weeklyGoalEl = document.querySelector('[data-role="combo-weekly-goal"]');
+
+    monthlyGoalEl.addEventListener('input', updateAll);
+    monthlyGoalEl.addEventListener('blur', () => {
+      if (!monthlyGoalEl.readOnly) {
+        const v = parseInt(monthlyGoalEl.value, 10);
+        if (v > 0) setGoalLocked(monthlyGoalEl, true);
+      }
+      saveMonthlyGoalRecord();
+      updateAll();
+    });
+
+    weeklyGoalEl.addEventListener('input', updateAll);
+    weeklyGoalEl.addEventListener('blur', () => {
+      if (!weeklyGoalEl.readOnly) {
+        const v = parseInt(weeklyGoalEl.value, 10);
+        if (v > 0) setGoalLocked(weeklyGoalEl, true);
+      }
+      onDataChanged();
+    });
   }
 
   function getRow(key) {
@@ -687,6 +823,10 @@
   function currentWeekValue() { return document.getElementById('week-of').value; }
   function storageKey(slug, week) { return `wgs:v1:${slug}:${week}`; }
 
+  const MONTHLY_GOAL_PREFIX = 'wgsmgoal:v1:';
+  function monthlyGoalStorageKey(slug, yearMonth) { return `${MONTHLY_GOAL_PREFIX}${slug}:${yearMonth}`; }
+  function yearMonthKey(monday) { return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}`; }
+
   function mondayOfIsoWeek(weekStr) {
     if (!weekStr || weekStr.indexOf('-W') === -1) return null;
     const [yearStr, weekPart] = weekStr.split('-W');
@@ -702,24 +842,43 @@
     return monday;
   }
 
+  function monthWeekInfo(monday) {
+    const year = monday.getFullYear(), month = monday.getMonth();
+    const mondays = [];
+    const d = new Date(year, month, 1);
+    while (d.getMonth() === month) {
+      if (d.getDay() === 1) mondays.push(new Date(d));
+      d.setDate(d.getDate() + 1);
+    }
+    const idx = mondays.findIndex(m => m.getTime() === monday.getTime());
+    return { totalWeeks: mondays.length, weekIndex: idx + 1 };
+  }
+
   function buildRecordFromDOM() {
     const metrics = {};
     METRICS.forEach(m => {
       const row = getRow(m.key);
       const countEl = row.querySelector('[data-role="count"]');
-      const goalEl = row.querySelector('[data-role="weekly-goal"]');
-      metrics[m.key] = {
-        actual: parseInt(countEl.value) || 0,
-        weeklyGoal: goalEl.value === '' ? '' : (parseInt(goalEl.value) || 0),
-        locked: goalEl.readOnly,
-      };
+      const entry = { actual: parseInt(countEl.value) || 0 };
+      if (m.goaled) {
+        const goalEl = row.querySelector('[data-role="weekly-goal"]');
+        entry.weeklyGoal = goalEl.value === '' ? '' : (parseInt(goalEl.value) || 0);
+        entry.locked = goalEl.readOnly;
+      }
+      metrics[m.key] = entry;
     });
+    const comboWeeklyGoalEl = document.querySelector('[data-role="combo-weekly-goal"]');
+    const combo = {
+      weeklyGoal: comboWeeklyGoalEl.value === '' ? '' : (parseInt(comboWeeklyGoalEl.value) || 0),
+      locked: comboWeeklyGoalEl.readOnly,
+    };
     return {
       v: 1,
       agentName: document.getElementById('agent-name').value,
       week: currentWeekValue(),
       updatedAt: Date.now(),
       metrics,
+      combo,
       leadGen: JSON.parse(JSON.stringify(state.leadGen)),
     };
   }
@@ -787,6 +946,60 @@
     return sum;
   }
 
+  function computeComboMonthlySum() {
+    const week = currentWeekValue();
+    const monday = mondayOfIsoWeek(week);
+    if (!monday) return 0;
+    const targetY = monday.getFullYear(), targetM = monday.getMonth();
+    const slug = currentAgentSlug();
+    const prefix = `wgs:v1:${slug}:`;
+    let sum = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || k.indexOf(prefix) !== 0) continue;
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        let rec;
+        try { rec = JSON.parse(raw); } catch (e) { continue; }
+        const m = mondayOfIsoWeek(rec.week);
+        if (!m) continue;
+        if (m.getFullYear() === targetY && m.getMonth() === targetM && rec.metrics) {
+          const cv = rec.metrics.twoWayConversations ? (parseInt(rec.metrics.twoWayConversations.actual) || 0) : 0;
+          const tx = rec.metrics.twoWayTexts ? (parseInt(rec.metrics.twoWayTexts.actual) || 0) : 0;
+          sum += cv + tx;
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return sum;
+  }
+
+  function computeComboPriorWeeklyGoalSum() {
+    const week = currentWeekValue();
+    const monday = mondayOfIsoWeek(week);
+    if (!monday) return 0;
+    const targetY = monday.getFullYear(), targetM = monday.getMonth();
+    const slug = currentAgentSlug();
+    const prefix = `wgs:v1:${slug}:`;
+    let sum = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || k.indexOf(prefix) !== 0) continue;
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        let rec;
+        try { rec = JSON.parse(raw); } catch (e) { continue; }
+        const m = mondayOfIsoWeek(rec.week);
+        if (!m) continue;
+        if (m.getFullYear() === targetY && m.getMonth() === targetM && m.getTime() < monday.getTime()) {
+          sum += (rec.combo ? (parseInt(rec.combo.weeklyGoal) || 0) : 0);
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return sum;
+  }
+
   function buildCarriedRecord(prev, week) {
     const record = {
       v: 1,
@@ -794,12 +1007,20 @@
       week,
       updatedAt: 0,
       metrics: {},
+      combo: { weeklyGoal: '', locked: false },
       leadGen: blankLeadGen(),
     };
     METRICS.forEach(m => {
-      const prevGoal = prev && prev.metrics && prev.metrics[m.key] ? prev.metrics[m.key].weeklyGoal : '';
-      record.metrics[m.key] = { actual: 0, weeklyGoal: (prevGoal === '' || prevGoal == null) ? '' : prevGoal, locked: false };
+      const entry = { actual: 0 };
+      if (m.goaled) {
+        const prevGoal = prev && prev.metrics && prev.metrics[m.key] ? prev.metrics[m.key].weeklyGoal : '';
+        entry.weeklyGoal = (prevGoal === '' || prevGoal == null) ? '' : prevGoal;
+        entry.locked = false;
+      }
+      record.metrics[m.key] = entry;
     });
+    const prevComboGoal = prev && prev.combo ? prev.combo.weeklyGoal : '';
+    record.combo = { weeklyGoal: (prevComboGoal === '' || prevComboGoal == null) ? '' : prevComboGoal, locked: false };
     return record;
   }
 
@@ -818,15 +1039,120 @@
     METRICS.forEach(m => {
       const row = getRow(m.key);
       const countEl = row.querySelector('[data-role="count"]');
-      const goalEl = row.querySelector('[data-role="weekly-goal"]');
-      const rm = (record.metrics && record.metrics[m.key]) || { actual: 0, weeklyGoal: '', locked: false };
+      const rm = (record.metrics && record.metrics[m.key]) || { actual: 0 };
       countEl.value = rm.actual || 0;
-      goalEl.value = (rm.weeklyGoal === '' || rm.weeklyGoal == null) ? '' : rm.weeklyGoal;
-      setGoalLocked(goalEl, !!rm.locked);
+      if (m.goaled) {
+        const goalEl = row.querySelector('[data-role="weekly-goal"]');
+        goalEl.value = (rm.weeklyGoal === '' || rm.weeklyGoal == null) ? '' : rm.weeklyGoal;
+        setGoalLocked(goalEl, !!rm.locked);
+      }
     });
+    const comboWeeklyGoalEl = document.querySelector('[data-role="combo-weekly-goal"]');
+    const rc = record.combo || { weeklyGoal: '', locked: false };
+    comboWeeklyGoalEl.value = (rc.weeklyGoal === '' || rc.weeklyGoal == null) ? '' : rc.weeklyGoal;
+    setGoalLocked(comboWeeklyGoalEl, !!rc.locked);
+
     state.leadGen = record.leadGen ? JSON.parse(JSON.stringify(record.leadGen)) : blankLeadGen();
     state.leadGenStatusSeen = {};
     DAYS.forEach(d => renderLeadGenDay(d.key));
+  }
+
+  function buildMonthlyGoalRecordFromDOM(yearMonth) {
+    const metrics = {};
+    METRICS.filter(m => m.goaled).forEach(m => {
+      const row = getRow(m.key);
+      const goalEl = row.querySelector('[data-role="monthly-goal"]');
+      metrics[m.key] = {
+        goal: goalEl.value === '' ? '' : (parseInt(goalEl.value) || 0),
+        locked: goalEl.readOnly,
+      };
+    });
+    const comboEl = document.querySelector('[data-role="combo-monthly-goal"]');
+    const combo = { goal: comboEl.value === '' ? '' : (parseInt(comboEl.value) || 0), locked: comboEl.readOnly };
+    return {
+      v: 1,
+      agentName: document.getElementById('agent-name').value,
+      yearMonth,
+      updatedAt: Date.now(),
+      metrics,
+      combo,
+    };
+  }
+
+  function saveMonthlyGoalRecord() {
+    try {
+      const monday = mondayOfIsoWeek(currentWeekValue());
+      if (!monday) return;
+      const ym = yearMonthKey(monday);
+      const slug = currentAgentSlug();
+      localStorage.setItem(monthlyGoalStorageKey(slug, ym), JSON.stringify(buildMonthlyGoalRecordFromDOM(ym)));
+    } catch (e) { /* ignore */ }
+  }
+
+  function loadMonthlyGoalRecord(slug, yearMonth) {
+    try {
+      const raw = localStorage.getItem(monthlyGoalStorageKey(slug, yearMonth));
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function findMostRecentOtherMonthlyGoalRecord(slug, excludeYearMonth) {
+    let best = null, bestYm = null;
+    try {
+      const prefix = `${MONTHLY_GOAL_PREFIX}${slug}:`;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || k.indexOf(prefix) !== 0) continue;
+        const ym = k.slice(prefix.length);
+        if (ym === excludeYearMonth) continue;
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        let rec;
+        try { rec = JSON.parse(raw); } catch (e) { continue; }
+        if (!bestYm || ym > bestYm) { bestYm = ym; best = rec; }
+      }
+    } catch (e) { /* ignore */ }
+    return best;
+  }
+
+  function buildCarriedMonthlyGoalRecord(prev, yearMonth) {
+    const record = { v: 1, agentName: document.getElementById('agent-name').value, yearMonth, updatedAt: 0, metrics: {}, combo: { goal: '', locked: false } };
+    METRICS.filter(m => m.goaled).forEach(m => {
+      const prevGoal = prev && prev.metrics && prev.metrics[m.key] ? prev.metrics[m.key].goal : '';
+      record.metrics[m.key] = { goal: (prevGoal === '' || prevGoal == null) ? '' : prevGoal, locked: false };
+    });
+    const prevComboGoal = prev && prev.combo ? prev.combo.goal : '';
+    record.combo = { goal: (prevComboGoal === '' || prevComboGoal == null) ? '' : prevComboGoal, locked: false };
+    return record;
+  }
+
+  function applyMonthlyGoalRecordToDOM(record) {
+    METRICS.filter(m => m.goaled).forEach(m => {
+      const row = getRow(m.key);
+      const goalEl = row.querySelector('[data-role="monthly-goal"]');
+      const rm = (record.metrics && record.metrics[m.key]) || { goal: '', locked: false };
+      goalEl.value = (rm.goal === '' || rm.goal == null) ? '' : rm.goal;
+      setGoalLocked(goalEl, !!rm.locked);
+    });
+    const comboEl = document.querySelector('[data-role="combo-monthly-goal"]');
+    const rc = record.combo || { goal: '', locked: false };
+    comboEl.value = (rc.goal === '' || rc.goal == null) ? '' : rc.goal;
+    setGoalLocked(comboEl, !!rc.locked);
+  }
+
+  function refreshMonthlyGoalsForCurrentMonth() {
+    const monday = mondayOfIsoWeek(currentWeekValue());
+    if (!monday) return;
+    const ym = yearMonthKey(monday);
+    const slug = currentAgentSlug();
+    const existing = loadMonthlyGoalRecord(slug, ym);
+    if (existing) {
+      applyMonthlyGoalRecordToDOM(existing);
+    } else {
+      const prev = findMostRecentOtherMonthlyGoalRecord(slug, ym);
+      applyMonthlyGoalRecordToDOM(buildCarriedMonthlyGoalRecord(prev, ym));
+    }
+    saveMonthlyGoalRecord();
   }
 
   function refreshForCurrentKey() {
@@ -841,11 +1167,12 @@
       applyRecordToDOM(buildCarriedRecord(prev, week));
     }
     saveRecord();
+    refreshMonthlyGoalsForCurrentMonth();
     updateAll();
   }
 
   function resetWeek() {
-    if (!confirm("Start a fresh week? This clears this week's counts and lead-gen times. Weekly goals carry over from last week, unlocked so you can confirm or tweak them.")) return;
+    if (!confirm("Start a fresh week? This clears this week's counts and lead-gen times. Weekly goals carry over from last week, unlocked so you can confirm or tweak them. Monthly goals are untouched.")) return;
     const week = currentWeekValue();
     const slug = currentAgentSlug();
     const prev = findMostRecentOtherRecord(slug, week);
@@ -869,37 +1196,84 @@
   function updateMetricRow(m) {
     const row = getRow(m.key);
     const countEl = row.querySelector('[data-role="count"]');
+    const actual = parseInt(countEl.value) || 0;
+
+    if (m.daily) {
+      const badgeEl = row.querySelector('[data-role="daily-badge"]');
+      if (badgeEl) {
+        const perDay = actual / 5;
+        const perDayRounded = Math.round(perDay * 10) / 10;
+        const perDayStr = Number.isInteger(perDayRounded) ? String(perDayRounded) : perDayRounded.toFixed(1);
+        badgeEl.textContent = perDayStr + (m.dailyUnit || '/day');
+        badgeEl.style.background = actual > 0 ? 'var(--green-bg)' : '#F0EDEA';
+        badgeEl.style.color = actual > 0 ? 'var(--green)' : 'var(--mid)';
+      }
+    }
+
+    if (!m.goaled) return;
+
     const goalEl = row.querySelector('[data-role="weekly-goal"]');
     const weeklyPctEl = row.querySelector('[data-role="weekly-pct"]');
     const monthlyGoalEl = row.querySelector('[data-role="monthly-goal"]');
     const monthlyPctEl = row.querySelector('[data-role="monthly-pct"]');
-    const badgeEl = row.querySelector('[data-role="daily-badge"]');
 
-    const actual = parseInt(countEl.value) || 0;
     const weeklyGoal = goalEl.value === '' ? 0 : (parseInt(goalEl.value) || 0);
-
     weeklyPctEl.textContent = pctText(actual, weeklyGoal);
 
-    const monthlyGoal = weeklyGoal > 0 ? Math.round(weeklyGoal * MONTH_MULTIPLIER) : 0;
-    monthlyGoalEl.textContent = monthlyGoal > 0 ? String(monthlyGoal) : '—';
-
+    const monthlyGoal = monthlyGoalEl.value === '' ? 0 : (parseInt(monthlyGoalEl.value) || 0);
     const monthlyActual = computeMonthlySum(m.key);
     monthlyPctEl.textContent = pctText(monthlyActual, monthlyGoal);
+  }
 
-    if (badgeEl) {
-      const perDay = actual / 5;
-      const perDayRounded = Math.round(perDay * 10) / 10;
-      const perDayStr = Number.isInteger(perDayRounded) ? String(perDayRounded) : perDayRounded.toFixed(1);
-      badgeEl.textContent = perDayStr + (m.dailyUnit || '/day');
-      badgeEl.style.background = actual > 0 ? 'var(--green-bg)' : '#F0EDEA';
-      badgeEl.style.color = actual > 0 ? 'var(--green)' : 'var(--mid)';
+  function updateComboCard() {
+    const monthlyGoalEl = document.querySelector('[data-role="combo-monthly-goal"]');
+    const weeklyGoalEl = document.querySelector('[data-role="combo-weekly-goal"]');
+    const monthlyPctEl = document.querySelector('[data-role="combo-monthly-pct"]');
+    const weeklyPctEl = document.querySelector('[data-role="combo-weekly-pct"]');
+    const progressEl = document.querySelector('[data-role="combo-progress"]');
+    const cautionEl = document.querySelector('[data-role="combo-caution"]');
+
+    const monthlyGoal = monthlyGoalEl.value === '' ? 0 : (parseInt(monthlyGoalEl.value) || 0);
+    const weeklyGoal = weeklyGoalEl.value === '' ? 0 : (parseInt(weeklyGoalEl.value) || 0);
+
+    const convActual = parseInt(getRow('twoWayConversations').querySelector('[data-role="count"]').value) || 0;
+    const textActual = parseInt(getRow('twoWayTexts').querySelector('[data-role="count"]').value) || 0;
+    const weeklyActual = convActual + textActual;
+
+    weeklyPctEl.textContent = pctText(weeklyActual, weeklyGoal);
+
+    const monthlyActual = computeComboMonthlySum();
+    monthlyPctEl.textContent = pctText(monthlyActual, monthlyGoal);
+
+    progressEl.textContent = `${convActual} conversations + ${textActual} texts = ${weeklyActual} of ${weeklyGoal > 0 ? weeklyGoal : '—'} this week`;
+
+    const monday = mondayOfIsoWeek(currentWeekValue());
+    let showCaution = false;
+    if (monthlyGoal > 0 && weeklyGoal > 0 && monday) {
+      const { totalWeeks, weekIndex } = monthWeekInfo(monday);
+      const expectedPace = Math.round(monthlyGoal / totalWeeks);
+      if (weeklyGoal < expectedPace) {
+        showCaution = true;
+        const priorSum = computeComboPriorWeeklyGoalSum();
+        const weeksRemainingAfter = totalWeeks - weekIndex;
+        const shortfall = expectedPace - weeklyGoal;
+        if (weeksRemainingAfter > 0) {
+          const remainingNeeded = monthlyGoal - priorSum - weeklyGoal;
+          const requiredAvg = Math.max(0, Math.round(remainingNeeded / weeksRemainingAfter));
+          cautionEl.textContent = `⚠️ Pace needs ~${expectedPace}/week for your ${monthlyGoal} monthly goal. At ${weeklyGoal}/week you're ${shortfall} short — your remaining ${weeksRemainingAfter} week${weeksRemainingAfter === 1 ? '' : 's'} will need to average ~${requiredAvg}/week to still hit ${monthlyGoal}.`;
+        } else {
+          const totalShort = Math.max(0, monthlyGoal - priorSum - weeklyGoal);
+          cautionEl.textContent = `⚠️ Pace needs ~${expectedPace}/week for your ${monthlyGoal} monthly goal. At ${weeklyGoal}/week — this is your last week in the month, so you'll finish about ${totalShort} short of ${monthlyGoal}.`;
+        }
+      }
     }
+    cautionEl.hidden = !showCaution;
   }
 
   function updateSummaryAndCommitment() {
     const val = key => parseInt(getRow(key).querySelector('[data-role="count"]').value) || 0;
     document.getElementById('sum-calls').textContent = val('callsMade');
-    document.getElementById('sum-convos').textContent = val('conversationsHad');
+    document.getElementById('sum-convos').textContent = val('twoWayConversations');
     document.getElementById('sum-touches').textContent = val('databaseTouches');
     document.getElementById('sum-leads').textContent = val('leadsGenerated');
     document.getElementById('sum-appts').textContent = val('appointmentsSet');
@@ -922,6 +1296,7 @@
 
   function updateAll() {
     METRICS.forEach(updateMetricRow);
+    updateComboCard();
     updateSummaryAndCommitment();
     DAYS.forEach(d => updateLeadGenDay(d.key));
   }
