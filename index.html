@@ -772,10 +772,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     // Core Success Metrics — each with its own individual weekly + monthly goal
     { key: 'leadsGenerated',       name: 'Leads Generated',          hint: 'New buyer or seller leads added to your pipeline this period',       section: 'core', goaled: true },
     { key: 'appointmentsSet',      name: 'Appointments Set',         hint: 'Listing appointments, buyer consultations, or strategy sessions booked', section: 'core', goaled: true },
-    { key: 'appointmentsHeld',     name: 'Appointments Held',        hint: 'Appointments that actually happened — measures show rate',           section: 'core', goaled: true },
+    { key: 'appointmentsHeld',     name: 'Appointments Held',        hint: 'Appointments that actually happened — measures show rate',           section: 'core', goaled: true, noMonthlyGoal: true },
     { key: 'listingsTaken',        name: 'Listings Taken',           hint: 'Signed listing agreements this period',                              section: 'core', goaled: true },
     { key: 'buyerAgreementsSigned', name: 'Buyer Agreements Signed', hint: 'Signed buyer representation agreements this period',                 section: 'core', goaled: true },
-    { key: 'contractsWritten',     name: 'Contracts Written / Offers Submitted', hint: 'Purchase agreements or offers submitted, either side of the transaction', section: 'core', goaled: true },
+    { key: 'contractsWritten',     name: 'Contracts Written / Offers Submitted', hint: 'Purchase agreements or offers submitted, either side of the transaction', section: 'core', goaled: true, noMonthlyGoal: true },
     { key: 'closings',             name: 'Closings',                 hint: 'Transactions that actually closed this period',                     section: 'core', goaled: true },
 
     // Supporting Activities — plain counts only, tracked for visibility, not part of the weekly goal
@@ -788,6 +788,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     { key: 'referralsReceived', name: 'Referrals Received', hint: 'Warm leads sent to you by someone in your network',                   section: 'supporting' },
     { key: 'reviewsRequested', name: 'Reviews Requested', hint: 'Google or Zillow review requests sent to past clients',                 section: 'supporting' },
     { key: 'reviewsReceived', name: 'Reviews Received',  hint: 'New 5-star reviews posted this week',                                   section: 'supporting' },
+    { key: 'handwrittenNotes', name: 'Handwritten Note Cards', hint: 'Personal handwritten notes sent to clients or contacts',            section: 'supporting' },
   ];
 
   const SECTIONS = [
@@ -836,6 +837,15 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function goaledRowMarkup(m) {
     const step = m.step || 1;
+    const monthlyBlock = m.noMonthlyGoal ? '' : `
+          <label class="goal-field">
+            <span>Monthly Goal</span>
+            <div class="goal-input-row">
+              <input class="monthly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="monthly-goal">
+              <button type="button" class="goal-unlock-btn" data-role="monthly-goal-unlock" title="Unlock to fix a mistake" hidden>✎</button>
+            </div>
+          </label>
+          <div class="goal-stat"><span>Monthly %</span><span class="pct-badge" data-role="monthly-pct">—</span></div>`;
     return `
       <div class="metric-row" data-metric="${m.key}">
         <div class="metric-info">
@@ -847,15 +857,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
           <input class="count" type="number" value="0" min="0" inputmode="numeric" data-role="count">
           <button type="button" data-delta="${step}">+</button>
         </div>
-        <div class="metric-goals">
-          <label class="goal-field">
-            <span>Monthly Goal</span>
-            <div class="goal-input-row">
-              <input class="monthly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="monthly-goal">
-              <button type="button" class="goal-unlock-btn" data-role="monthly-goal-unlock" title="Unlock to fix a mistake" hidden>✎</button>
-            </div>
-          </label>
-          <div class="goal-stat"><span>Monthly %</span><span class="pct-badge" data-role="monthly-pct">—</span></div>
+        <div class="metric-goals">${monthlyBlock}
           <label class="goal-field">
             <span>Weekly Goal</span>
             <div class="goal-input-row">
@@ -972,20 +974,22 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         });
         wireUnlockButton(weeklyGoalEl, row.querySelector('[data-role="weekly-goal-unlock"]'), onDataChanged);
 
-        const monthlyGoalEl = row.querySelector('[data-role="monthly-goal"]');
-        monthlyGoalEl.addEventListener('input', updateAll);
-        monthlyGoalEl.addEventListener('blur', () => {
-          if (!monthlyGoalEl.readOnly) {
-            const v = parseInt(monthlyGoalEl.value, 10);
-            if (v > 0) setGoalLocked(monthlyGoalEl, true);
-          }
-          saveMonthlyGoalRecord();
-          updateAll();
-        });
-        wireUnlockButton(monthlyGoalEl, row.querySelector('[data-role="monthly-goal-unlock"]'), () => {
-          saveMonthlyGoalRecord();
-          updateAll();
-        });
+        if (!m.noMonthlyGoal) {
+          const monthlyGoalEl = row.querySelector('[data-role="monthly-goal"]');
+          monthlyGoalEl.addEventListener('input', updateAll);
+          monthlyGoalEl.addEventListener('blur', () => {
+            if (!monthlyGoalEl.readOnly) {
+              const v = parseInt(monthlyGoalEl.value, 10);
+              if (v > 0) setGoalLocked(monthlyGoalEl, true);
+            }
+            saveMonthlyGoalRecord();
+            updateAll();
+          });
+          wireUnlockButton(monthlyGoalEl, row.querySelector('[data-role="monthly-goal-unlock"]'), () => {
+            saveMonthlyGoalRecord();
+            updateAll();
+          });
+        }
       }
     });
 
@@ -1329,7 +1333,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function buildMonthlyGoalRecordFromDOM(yearMonth) {
     const metrics = {};
-    METRICS.filter(m => m.goaled).forEach(m => {
+    METRICS.filter(m => m.goaled && !m.noMonthlyGoal).forEach(m => {
       const row = getRow(m.key);
       const goalEl = row.querySelector('[data-role="monthly-goal"]');
       metrics[m.key] = {
@@ -1378,7 +1382,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function buildCarriedMonthlyGoalRecord(prev, yearMonth) {
     const record = { agentName: currentDisplayName(), yearMonth, metrics: {}, combo: { goal: '', locked: false } };
-    METRICS.filter(m => m.goaled).forEach(m => {
+    METRICS.filter(m => m.goaled && !m.noMonthlyGoal).forEach(m => {
       const prevGoal = prev && prev.metrics && prev.metrics[m.key] ? prev.metrics[m.key].goal : '';
       record.metrics[m.key] = { goal: (prevGoal === '' || prevGoal == null) ? '' : prevGoal, locked: false };
     });
@@ -1388,7 +1392,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
 
   function applyMonthlyGoalRecordToDOM(record) {
-    METRICS.filter(m => m.goaled).forEach(m => {
+    METRICS.filter(m => m.goaled && !m.noMonthlyGoal).forEach(m => {
       const row = getRow(m.key);
       const goalEl = row.querySelector('[data-role="monthly-goal"]');
       const rm = (record.metrics && record.metrics[m.key]) || { goal: '', locked: false };
@@ -1472,12 +1476,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
     const goalEl = row.querySelector('[data-role="weekly-goal"]');
     const weeklyPctEl = row.querySelector('[data-role="weekly-pct"]');
-    const monthlyGoalEl = row.querySelector('[data-role="monthly-goal"]');
-    const monthlyPctEl = row.querySelector('[data-role="monthly-pct"]');
 
     const weeklyGoal = goalEl.value === '' ? 0 : (parseInt(goalEl.value) || 0);
     weeklyPctEl.textContent = pctText(actual, weeklyGoal);
 
+    if (m.noMonthlyGoal) return;
+
+    const monthlyGoalEl = row.querySelector('[data-role="monthly-goal"]');
+    const monthlyPctEl = row.querySelector('[data-role="monthly-pct"]');
     const monthlyGoal = monthlyGoalEl.value === '' ? 0 : (parseInt(monthlyGoalEl.value) || 0);
     const monthlyActual = computeMonthlySum(m.key);
     monthlyPctEl.textContent = pctText(monthlyActual, monthlyGoal);
