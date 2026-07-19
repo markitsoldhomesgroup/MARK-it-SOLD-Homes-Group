@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conversion Ratio Coaching Sheet – MARK it SOLD</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red:      #CE011F;
+    --red-soft: #F9E8EB;
+    --dark:     #1A1A1A;
+    --body:     #4D4D4D;
+    --mid:      #7A7069;
+    --ground:   #F6F4F1;
+    --surface:  #FFFFFF;
+    --border:   #E4DDD8;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--body);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+
+  .page { max-width: 800px; margin: 0 auto; padding: 28px 30px 60px; }
+
+  .print-note {
+    background: var(--red);
+    color: #fff;
+    text-align: center;
+    padding: 10px 16px;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  .header-eyebrow {
+    font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--red); text-align: center; margin-bottom: 6px;
+  }
+  .header-title { font-family: Georgia, 'Times New Roman', serif; font-size: 24px; color: var(--dark); text-align: center; margin-bottom: 4px; }
+  .header-sub { text-align: center; font-size: 12px; color: var(--mid); margin-bottom: 22px; }
+
+  .name-week-row { display: flex; gap: 24px; margin-bottom: 22px; flex-wrap: wrap; }
+  .fill-field { flex: 1; min-width: 200px; }
+  .fill-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--mid); margin-bottom: 5px; }
+  .fill-line { border-bottom: 1.5px solid var(--dark); height: 26px; }
+
+  .section { margin-bottom: 26px; page-break-inside: avoid; }
+  .section-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    border-bottom: 2px solid var(--red); padding-bottom: 6px;
+  }
+  .section-icon {
+    width: 24px; height: 24px; background: var(--red); color: #fff; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;
+  }
+  .section-title { font-family: Georgia, 'Times New Roman', serif; font-size: 16px; color: var(--dark); }
+  .section-sub { font-size: 11px; color: var(--mid); }
+
+  /* FORMULA CHAIN */
+  .formula-chain { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .formula-step {
+    flex: 1; min-width: 130px;
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 14px 12px; text-align: center;
+  }
+  .formula-num { font-family: Georgia, 'Times New Roman', serif; font-size: 26px; color: var(--red); line-height: 1; margin-bottom: 4px; }
+  .formula-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--dark); }
+  .formula-arrow { display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--mid); padding: 0 2px; }
+
+  .rollup-box {
+    background: var(--dark); color: #fff; border-radius: 8px; padding: 16px 18px;
+    text-align: center; font-family: Georgia, 'Times New Roman', serif; font-size: 15px;
+  }
+  .rollup-box strong { color: var(--red-soft); }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid var(--border); padding: 7px 8px; text-align: left; font-size: 12px; }
+  th { background: var(--surface); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--mid); }
+  td.blank { height: 28px; }
+  tr.total-row td { background: var(--red-soft); font-weight: 700; }
+
+  /* RATIO CALC */
+  .ratio-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .ratio-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; padding: 14px; }
+  .ratio-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--red); margin-bottom: 8px; }
+  .ratio-calc { font-size: 12px; color: var(--body); margin-bottom: 10px; }
+  .ratio-result-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+  .ratio-result-row .fill-line { flex: 1; height: 22px; margin-left: 8px; }
+  .ratio-standard { font-size: 10.5px; color: var(--mid); margin-top: 6px; }
+
+  .coaching-notes {
+    background: var(--red-soft); border-left: 4px solid var(--red); border-radius: 6px;
+    padding: 14px 16px; font-size: 12.5px; color: var(--dark); line-height: 1.6;
+  }
+  .coaching-notes ul { margin: 8px 0 0 18px; }
+  .coaching-notes li { margin-bottom: 6px; }
+
+  .transfer-note { text-align: center; font-size: 11.5px; color: var(--mid); margin-top: 20px; padding: 10px; border: 1px dashed var(--border); border-radius: 6px; }
+
+  @media print {
+    body { background: #fff; }
+    .print-note { display: none; }
+    .page { padding: 10px 20px; }
+    .section { page-break-inside: avoid; }
+    .formula-step, .rollup-box, .coaching-notes, th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  @media (max-width: 600px) {
+    .name-week-row { flex-direction: column; gap: 12px; }
+    .formula-chain { flex-direction: column; }
+    .formula-arrow { transform: rotate(90deg); padding: 4px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="print-note">Coaching worksheet — work through this with the agent, then track their real numbers period over period.</div>
+
+<div class="page">
+
+  <div class="header-eyebrow">MARK it SOLD Homes Group &nbsp;·&nbsp; Keller Williams Local</div>
+  <div class="header-title">Conversion Ratio Coaching Sheet</div>
+  <div class="header-sub">The math behind a closing — and finding your own numbers</div>
+
+  <div class="name-week-row">
+    <div class="fill-field"><div class="fill-label">Agent Name</div><div class="fill-line"></div></div>
+    <div class="fill-field"><div class="fill-label">Period Covered (dates)</div><div class="fill-line"></div></div>
+  </div>
+
+  <!-- THE FORMULA -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon">🎯</div>
+      <div>
+        <div class="section-title">The Standard We Coach To</div>
+        <div class="section-sub">This is the starting benchmark for a new agent — not a ceiling, a baseline to measure against</div>
+      </div>
+    </div>
+
+    <div class="formula-chain">
+      <div class="formula-step">
+        <div class="formula-num">12</div>
+        <div class="formula-label">Contacts</div>
+      </div>
+      <div class="formula-arrow">=</div>
+      <div class="formula-step">
+        <div class="formula-num">1</div>
+        <div class="formula-label">Lead</div>
+      </div>
+    </div>
+    <div class="formula-chain">
+      <div class="formula-step">
+        <div class="formula-num">5</div>
+        <div class="formula-label">Leads</div>
+      </div>
+      <div class="formula-arrow">=</div>
+      <div class="formula-step">
+        <div class="formula-num">1</div>
+        <div class="formula-label">Appointment</div>
+      </div>
+    </div>
+    <div class="formula-chain">
+      <div class="formula-step">
+        <div class="formula-num">2</div>
+        <div class="formula-label">Appointments</div>
+      </div>
+      <div class="formula-arrow">=</div>
+      <div class="formula-step">
+        <div class="formula-num">1</div>
+        <div class="formula-label">Closing</div>
+      </div>
+    </div>
+
+    <div class="rollup-box">
+      Rolled all the way up: <strong>120 contacts</strong> → <strong>10 leads</strong> → <strong>2 appointments</strong> → <strong>1 closing</strong>
+    </div>
+  </div>
+
+  <!-- TRACK ACTUAL NUMBERS -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon">📝</div>
+      <div>
+        <div class="section-title">Track Your Actual Numbers</div>
+        <div class="section-sub">Log real totals for the period above — the more meticulous the notes, the more accurate your ratios</div>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Week Of</th><th>Contacts Made</th><th>Leads Generated</th><th>Appointments Held</th><th>Closings</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="blank"></td><td class="blank"></td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+        <tr><td class="blank"></td><td class="blank"></td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+        <tr><td class="blank"></td><td class="blank"></td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+        <tr><td class="blank"></td><td class="blank"></td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+        <tr class="total-row"><td>TOTAL</td><td class="blank"></td><td class="blank"></td><td class="blank"></td><td class="blank"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CALCULATE PERSONAL RATIOS -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon">📊</div>
+      <div>
+        <div class="section-title">Calculate Your Personal Ratios</div>
+        <div class="section-sub">Use the totals above to find your own numbers — this is where real coaching starts</div>
+      </div>
+    </div>
+    <div class="ratio-grid">
+      <div class="ratio-card">
+        <div class="ratio-title">Contacts → Lead</div>
+        <div class="ratio-calc">Total Contacts ÷ Total Leads</div>
+        <div class="ratio-result-row">= <div class="fill-line"></div></div>
+        <div class="ratio-standard">Standard: 12 : 1</div>
+      </div>
+      <div class="ratio-card">
+        <div class="ratio-title">Leads → Appointment</div>
+        <div class="ratio-calc">Total Leads ÷ Total Appointments</div>
+        <div class="ratio-result-row">= <div class="fill-line"></div></div>
+        <div class="ratio-standard">Standard: 5 : 1</div>
+      </div>
+      <div class="ratio-card">
+        <div class="ratio-title">Appointments → Closing</div>
+        <div class="ratio-calc">Total Appointments ÷ Total Closings</div>
+        <div class="ratio-result-row">= <div class="fill-line"></div></div>
+        <div class="ratio-standard">Standard: 2 : 1</div>
+      </div>
+      <div class="ratio-card">
+        <div class="ratio-title">Contacts → Closing</div>
+        <div class="ratio-calc">Total Contacts ÷ Total Closings</div>
+        <div class="ratio-result-row">= <div class="fill-line"></div></div>
+        <div class="ratio-standard">Standard: 120 : 1</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COACHING NOTES -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon">💬</div>
+      <div>
+        <div class="section-title">What Your Numbers Are Telling You</div>
+      </div>
+    </div>
+    <div class="coaching-notes">
+      Compare each personal ratio to the standard above. A number worse than the standard usually points to a specific, fixable skill —
+      <ul>
+        <li><strong>Contacts-to-lead worse than 12:1</strong> — work on the qualifying conversation itself, not just dialing more.</li>
+        <li><strong>Leads-to-appointment worse than 5:1</strong> — sharpen the appointment-setting script and follow-up timing.</li>
+        <li><strong>Appointments-to-closing worse than 2:1</strong> — look at the presentation, objection handling, or the quality of appointments being set.</li>
+      </ul>
+    </div>
+    <div class="fill-field" style="margin-top: 14px;">
+      <div class="fill-label">Notes from this coaching session</div>
+      <div class="fill-line"></div>
+      <div class="fill-line" style="margin-top: 10px;"></div>
+      <div class="fill-line" style="margin-top: 10px;"></div>
+    </div>
+  </div>
+
+  <div class="transfer-note">
+    Revisit this sheet every few weeks — as meticulous notes build up, personal ratios become a much more reliable coaching tool than the standard alone.
+  </div>
+
+</div>
+
+</body>
+</html>
