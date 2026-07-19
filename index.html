@@ -93,17 +93,22 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   .agent-field input::placeholder { color: rgba(255,255,255,.3); }
   .agent-field input:focus { border-color: var(--red); }
   .agent-field input[type="week"] { color-scheme: dark; }
-  .identity-display {
-    padding: 10px 14px;
-    background: rgba(255,255,255,.08);
-    border: 1.5px solid rgba(255,255,255,.15);
-    border-radius: 6px;
-    font-size: 14px;
-    color: #fff;
-  }
-  .sign-out-row { margin-top: 14px; text-align: right; }
+  .agent-field input[readonly] { cursor: not-allowed; opacity: .85; }
+  .sign-out-row { margin-top: 14px; display: flex; justify-content: flex-end; gap: 16px; }
   .sign-out-row .link-btn { color: #C9C4BF; }
   .sign-out-row .link-btn:hover { color: #fff; }
+  .guest-badge {
+    display: inline-block;
+    background: rgba(206,1,31,.18);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin-bottom: 14px;
+  }
 
   /* ── AUTH GATE ── */
   .auth-gate { max-width: 420px; margin: 60px auto; padding: 0 20px; }
@@ -455,10 +460,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     <div class="header-eyebrow">MARK it SOLD Homes Group &nbsp;·&nbsp; Keller Williams Local</div>
     <h1 class="header-title"><em>Weekly Goal Sheet</em><br>Set Your Intentions Before the Week Begins</h1>
     <div id="header-authed" hidden>
+      <div class="guest-badge" id="guest-badge" hidden>Guest Mode — saved to this browser only</div>
       <div class="agent-row">
         <div class="agent-field">
           <label>Agent</label>
-          <div class="identity-display" id="agent-name-display">—</div>
+          <input type="text" id="agent-name" placeholder="Your full name">
         </div>
         <div class="agent-field">
           <label>Week Of</label>
@@ -467,6 +473,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       </div>
       <div class="sign-out-row">
         <button type="button" class="link-btn" id="sign-out-btn">Sign Out</button>
+        <button type="button" class="link-btn" id="guest-signin-btn" hidden>Sign In to sync your data</button>
       </div>
     </div>
   </div>
@@ -484,6 +491,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <div class="auth-error" id="signin-error" hidden></div>
       <button type="submit" class="btn btn-primary">Sign In</button>
       <button type="button" class="link-btn" id="forgot-password-btn">First time signing in, or forgot your password?</button>
+      <button type="button" class="link-btn" id="guest-mode-btn">Continue without an account</button>
     </form>
 
     <form id="reset-request-form" class="auth-form" hidden>
@@ -571,8 +579,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     </div>
   </div>
 
-  <div class="storage-note">
+  <div class="storage-note" id="storage-note-account">
     Your goals and progress are saved securely to your account and visible to your team — only you can edit your own numbers.
+  </div>
+  <div class="storage-note" id="storage-note-guest" hidden>
+    Guest mode: your goals and progress are saved in this browser only — they don't sync across devices and won't appear on the team board. <button type="button" class="link-btn" id="guest-signin-btn-2">Sign in to change that</button>.
   </div>
 
 </div>
@@ -587,6 +598,169 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   let currentUser = null;
   let agentFullName = '';
   let cache = { weeklyRecords: {}, monthlyGoals: {} };
+  let guestMode = false;
+
+  function currentDisplayName() {
+    return guestMode ? document.getElementById('agent-name').value : agentFullName;
+  }
+
+  /* ────────────────────────── GUEST MODE (browser-only storage) ────────────────────────── */
+
+  function slugify(name) {
+    const s = (name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    return s || 'unassigned';
+  }
+  function currentAgentSlug() { return slugify(document.getElementById('agent-name').value); }
+  function storageKeyLocal(slug, week) { return `wgs:v1:${slug}:${week}`; }
+  const MONTHLY_GOAL_PREFIX_LOCAL = 'wgsmgoal:v1:';
+  function monthlyGoalStorageKeyLocal(slug, yearMonth) { return `${MONTHLY_GOAL_PREFIX_LOCAL}${slug}:${yearMonth}`; }
+  const LAST_AGENT_KEY = 'wgs:lastAgentName';
+  function rememberAgentName(name) { try { localStorage.setItem(LAST_AGENT_KEY, name || ''); } catch (e) { /* ignore */ } }
+  function recallAgentName() { try { return localStorage.getItem(LAST_AGENT_KEY) || ''; } catch (e) { return ''; } }
+
+  function saveRecordLocal() {
+    const week = currentWeekValue();
+    if (!week) return;
+    try { localStorage.setItem(storageKeyLocal(currentAgentSlug(), week), JSON.stringify(buildRecordFromDOM())); } catch (e) { /* ignore */ }
+  }
+
+  function loadRecordLocal(week) {
+    try {
+      const raw = localStorage.getItem(storageKeyLocal(currentAgentSlug(), week));
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function findMostRecentOtherRecordLocal(excludeWeek) {
+    let best = null, bestMonday = null;
+    try {
+      const prefix = `wgs:v1:${currentAgentSlug()}:`;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || k.indexOf(prefix) !== 0) continue;
+        const week = k.slice(prefix.length);
+        if (week === excludeWeek) continue;
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        let rec;
+        try { rec = JSON.parse(raw); } catch (e) { continue; }
+        const monday = mondayOfIsoWeek(week);
+        if (!monday) continue;
+        if (!bestMonday || monday > bestMonday) { bestMonday = monday; best = rec; }
+      }
+    } catch (e) { /* ignore */ }
+    return best;
+  }
+
+  function computeMonthlySumLocal(key) {
+    const week = currentWeekValue();
+    const monday = mondayOfIsoWeek(week);
+    if (!monday) return 0;
+    const targetY = monday.getFullYear(), targetM = monday.getMonth();
+    const prefix = `wgs:v1:${currentAgentSlug()}:`;
+    let sum = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || k.indexOf(prefix) !== 0) continue;
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        let rec;
+        try { rec = JSON.parse(raw); } catch (e) { continue; }
+        const m = mondayOfIsoWeek(rec.week);
+        if (!m) continue;
+        if (m.getFullYear() === targetY && m.getMonth() === targetM) {
+          sum += (rec.metrics && rec.metrics[key] ? (parseInt(rec.metrics[key].actual) || 0) : 0);
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return sum;
+  }
+
+  function computeComboMonthlySumLocal() {
+    const week = currentWeekValue();
+    const monday = mondayOfIsoWeek(week);
+    if (!monday) return 0;
+    const targetY = monday.getFullYear(), targetM = monday.getMonth();
+    const prefix = `wgs:v1:${currentAgentSlug()}:`;
+    let sum = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || k.indexOf(prefix) !== 0) continue;
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        let rec;
+        try { rec = JSON.parse(raw); } catch (e) { continue; }
+        const m = mondayOfIsoWeek(rec.week);
+        if (!m || !rec.metrics) continue;
+        if (m.getFullYear() === targetY && m.getMonth() === targetM) {
+          const cv = rec.metrics.twoWayConversations ? (parseInt(rec.metrics.twoWayConversations.actual) || 0) : 0;
+          const tx = rec.metrics.twoWayTexts ? (parseInt(rec.metrics.twoWayTexts.actual) || 0) : 0;
+          sum += cv + tx;
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return sum;
+  }
+
+  function computeComboPriorWeeklyGoalSumLocal() {
+    const week = currentWeekValue();
+    const monday = mondayOfIsoWeek(week);
+    if (!monday) return 0;
+    const targetY = monday.getFullYear(), targetM = monday.getMonth();
+    const prefix = `wgs:v1:${currentAgentSlug()}:`;
+    let sum = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || k.indexOf(prefix) !== 0) continue;
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        let rec;
+        try { rec = JSON.parse(raw); } catch (e) { continue; }
+        const m = mondayOfIsoWeek(rec.week);
+        if (!m) continue;
+        if (m.getFullYear() === targetY && m.getMonth() === targetM && m.getTime() < monday.getTime()) {
+          sum += (rec.combo ? (parseInt(rec.combo.weeklyGoal) || 0) : 0);
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return sum;
+  }
+
+  function saveMonthlyGoalRecordLocal() {
+    const monday = mondayOfIsoWeek(currentWeekValue());
+    if (!monday) return;
+    const ym = yearMonthKey(monday);
+    try { localStorage.setItem(monthlyGoalStorageKeyLocal(currentAgentSlug(), ym), JSON.stringify(buildMonthlyGoalRecordFromDOM(ym))); } catch (e) { /* ignore */ }
+  }
+
+  function loadMonthlyGoalRecordLocal(yearMonth) {
+    try {
+      const raw = localStorage.getItem(monthlyGoalStorageKeyLocal(currentAgentSlug(), yearMonth));
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function findMostRecentOtherMonthlyGoalRecordLocal(excludeYearMonth) {
+    let best = null, bestYm = null;
+    try {
+      const prefix = `${MONTHLY_GOAL_PREFIX_LOCAL}${currentAgentSlug()}:`;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || k.indexOf(prefix) !== 0) continue;
+        const ym = k.slice(prefix.length);
+        if (ym === excludeYearMonth) continue;
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        let rec;
+        try { rec = JSON.parse(raw); } catch (e) { continue; }
+        if (!bestYm || ym > bestYm) { bestYm = ym; best = rec; }
+      }
+    } catch (e) { /* ignore */ }
+    return best;
+  }
 
   /* ────────────────────────── DATA MODEL ────────────────────────── */
 
@@ -1012,7 +1186,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       locked: comboWeeklyGoalEl.readOnly,
     };
     return {
-      agentName: agentFullName,
+      agentName: currentDisplayName(),
       week: currentWeekValue(),
       metrics,
       combo,
@@ -1020,7 +1194,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     };
   }
 
-  function saveRecord() {
+  function saveRecordCloud() {
     const week = currentWeekValue();
     if (!week || !currentUser) return;
     const record = buildRecordFromDOM();
@@ -1037,11 +1211,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     });
   }
 
-  function loadRecord(week) {
+  function loadRecordCloud(week) {
     return cache.weeklyRecords[week] || null;
   }
 
-  function findMostRecentOtherRecord(excludeWeek) {
+  function findMostRecentOtherRecordCloud(excludeWeek) {
     let best = null, bestMonday = null;
     Object.keys(cache.weeklyRecords).forEach(week => {
       if (week === excludeWeek) return;
@@ -1052,7 +1226,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return best;
   }
 
-  function computeMonthlySum(key) {
+  function computeMonthlySumCloud(key) {
     const week = currentWeekValue();
     const monday = mondayOfIsoWeek(week);
     if (!monday) return 0;
@@ -1068,7 +1242,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return sum;
   }
 
-  function computeComboMonthlySum() {
+  function computeComboMonthlySumCloud() {
     const week = currentWeekValue();
     const monday = mondayOfIsoWeek(week);
     if (!monday) return 0;
@@ -1086,7 +1260,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return sum;
   }
 
-  function computeComboPriorWeeklyGoalSum() {
+  function computeComboPriorWeeklyGoalSumCloud() {
     const week = currentWeekValue();
     const monday = mondayOfIsoWeek(week);
     if (!monday) return 0;
@@ -1102,9 +1276,16 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return sum;
   }
 
+  function saveRecord() { return guestMode ? saveRecordLocal() : saveRecordCloud(); }
+  function loadRecord(week) { return guestMode ? loadRecordLocal(week) : loadRecordCloud(week); }
+  function findMostRecentOtherRecord(excludeWeek) { return guestMode ? findMostRecentOtherRecordLocal(excludeWeek) : findMostRecentOtherRecordCloud(excludeWeek); }
+  function computeMonthlySum(key) { return guestMode ? computeMonthlySumLocal(key) : computeMonthlySumCloud(key); }
+  function computeComboMonthlySum() { return guestMode ? computeComboMonthlySumLocal() : computeComboMonthlySumCloud(); }
+  function computeComboPriorWeeklyGoalSum() { return guestMode ? computeComboPriorWeeklyGoalSumLocal() : computeComboPriorWeeklyGoalSumCloud(); }
+
   function buildCarriedRecord(prev, week) {
     const record = {
-      agentName: agentFullName,
+      agentName: currentDisplayName(),
       week,
       metrics: {},
       combo: { weeklyGoal: '', locked: false },
@@ -1158,10 +1339,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     });
     const comboEl = document.querySelector('[data-role="combo-monthly-goal"]');
     const combo = { goal: comboEl.value === '' ? '' : (parseInt(comboEl.value) || 0), locked: comboEl.readOnly };
-    return { agentName: agentFullName, yearMonth, metrics, combo };
+    return { agentName: currentDisplayName(), yearMonth, metrics, combo };
   }
 
-  function saveMonthlyGoalRecord() {
+  function saveMonthlyGoalRecordCloud() {
     const monday = mondayOfIsoWeek(currentWeekValue());
     if (!monday || !currentUser) return;
     const ym = yearMonthKey(monday);
@@ -1178,11 +1359,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     });
   }
 
-  function loadMonthlyGoalRecord(yearMonth) {
+  function loadMonthlyGoalRecordCloud(yearMonth) {
     return cache.monthlyGoals[yearMonth] || null;
   }
 
-  function findMostRecentOtherMonthlyGoalRecord(excludeYearMonth) {
+  function findMostRecentOtherMonthlyGoalRecordCloud(excludeYearMonth) {
     let best = null, bestYm = null;
     Object.keys(cache.monthlyGoals).forEach(ym => {
       if (ym === excludeYearMonth) return;
@@ -1191,8 +1372,12 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return best;
   }
 
+  function saveMonthlyGoalRecord() { return guestMode ? saveMonthlyGoalRecordLocal() : saveMonthlyGoalRecordCloud(); }
+  function loadMonthlyGoalRecord(yearMonth) { return guestMode ? loadMonthlyGoalRecordLocal(yearMonth) : loadMonthlyGoalRecordCloud(yearMonth); }
+  function findMostRecentOtherMonthlyGoalRecord(excludeYearMonth) { return guestMode ? findMostRecentOtherMonthlyGoalRecordLocal(excludeYearMonth) : findMostRecentOtherMonthlyGoalRecordCloud(excludeYearMonth); }
+
   function buildCarriedMonthlyGoalRecord(prev, yearMonth) {
-    const record = { agentName: agentFullName, yearMonth, metrics: {}, combo: { goal: '', locked: false } };
+    const record = { agentName: currentDisplayName(), yearMonth, metrics: {}, combo: { goal: '', locked: false } };
     METRICS.filter(m => m.goaled).forEach(m => {
       const prevGoal = prev && prev.metrics && prev.metrics[m.key] ? prev.metrics[m.key].goal : '';
       record.metrics[m.key] = { goal: (prevGoal === '' || prevGoal == null) ? '' : prevGoal, locked: false };
@@ -1232,7 +1417,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function refreshForCurrentKey() {
     const week = currentWeekValue();
-    if (!week || !currentUser) { updateAll(); return; }
+    if (!week || (!currentUser && !guestMode)) { updateAll(); return; }
     const existing = loadRecord(week);
     if (existing) {
       applyRecordToDOM(existing);
@@ -1352,7 +1537,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     document.getElementById('sum-appts').textContent = val('appointmentsSet');
     document.getElementById('sum-referrals').textContent = val('referralsGiven');
 
-    const name = agentFullName || '_______________';
+    const name = currentDisplayName().trim() || '_______________';
     const weekEl = document.getElementById('week-of');
     let weekLabel = '_______________';
     const monday = mondayOfIsoWeek(weekEl.value);
@@ -1390,12 +1575,61 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     document.getElementById('auth-gate').hidden = true;
     document.getElementById('app-content').hidden = false;
     document.getElementById('header-authed').hidden = false;
+
+    const nameEl = document.getElementById('agent-name');
+    const guestBadge = document.getElementById('guest-badge');
+    const signOutBtn = document.getElementById('sign-out-btn');
+    const guestSignInBtn = document.getElementById('guest-signin-btn');
+    const noteAccount = document.getElementById('storage-note-account');
+    const noteGuest = document.getElementById('storage-note-guest');
+
+    if (guestMode) {
+      nameEl.readOnly = false;
+      guestBadge.hidden = false;
+      signOutBtn.hidden = true;
+      guestSignInBtn.hidden = false;
+      noteAccount.hidden = true;
+      noteGuest.hidden = false;
+    } else {
+      nameEl.value = agentFullName;
+      nameEl.readOnly = true;
+      guestBadge.hidden = true;
+      signOutBtn.hidden = false;
+      guestSignInBtn.hidden = true;
+      noteAccount.hidden = false;
+      noteGuest.hidden = true;
+    }
+  }
+
+  function setDefaultWeekIfBlank() {
+    if (document.getElementById('week-of').value) return;
+    const today = new Date();
+    const yr = today.getFullYear();
+    const start = new Date(yr, 0, 1);
+    const dayOfYear = Math.floor((today - start) / 86400000);
+    const wk = Math.ceil((dayOfYear + start.getDay() + 1) / 7);
+    document.getElementById('week-of').value = `${yr}-W${String(wk).padStart(2, '0')}`;
+  }
+
+  function enterGuestMode() {
+    guestMode = true;
+    currentUser = null;
+    agentFullName = '';
+    cache = { weeklyRecords: {}, monthlyGoals: {} };
+    showApp();
+    document.getElementById('agent-name').value = recallAgentName();
+    setDefaultWeekIfBlank();
+    refreshForCurrentKey();
+  }
+
+  function exitGuestMode() {
+    guestMode = false;
+    showGate('signin');
   }
 
   async function loadAgentProfile(userId, userEmail) {
     const { data } = await sb.from('agents').select('full_name').eq('id', userId).maybeSingle();
     agentFullName = (data && data.full_name) || userEmail || 'Agent';
-    document.getElementById('agent-name-display').textContent = agentFullName;
   }
 
   async function loadAgentCache(userId) {
@@ -1425,21 +1659,13 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
 
   async function handleSignedIn(user) {
+    guestMode = false;
     currentUser = user;
     showGate('loading');
     await loadAgentProfile(user.id, user.email);
     await loadAgentCache(user.id);
     showApp();
-    if (!document.getElementById('week-of').value) {
-      (function setDefaultWeek() {
-        const today = new Date();
-        const yr = today.getFullYear();
-        const start = new Date(yr, 0, 1);
-        const dayOfYear = Math.floor((today - start) / 86400000);
-        const wk = Math.ceil((dayOfYear + start.getDay() + 1) / 7);
-        document.getElementById('week-of').value = `${yr}-W${String(wk).padStart(2, '0')}`;
-      })();
-    }
+    setDefaultWeekIfBlank();
     refreshForCurrentKey();
   }
 
@@ -1449,7 +1675,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     cache = { weeklyRecords: {}, monthlyGoals: {} };
     document.getElementById('signin-email').value = '';
     document.getElementById('signin-password').value = '';
-    showGate('signin');
+    if (!guestMode) showGate('signin');
   }
 
   function urlIndicatesPasswordSetup() {
@@ -1484,6 +1710,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   document.getElementById('forgot-password-btn').addEventListener('click', () => showGate('reset'));
   document.getElementById('back-to-signin-btn').addEventListener('click', () => showGate('signin'));
+  document.getElementById('guest-mode-btn').addEventListener('click', enterGuestMode);
+  document.getElementById('guest-signin-btn').addEventListener('click', exitGuestMode);
+  document.getElementById('guest-signin-btn-2').addEventListener('click', exitGuestMode);
 
   document.getElementById('reset-request-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -1513,6 +1742,13 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   });
 
   document.getElementById('week-of').addEventListener('change', refreshForCurrentKey);
+
+  document.getElementById('agent-name').addEventListener('input', updateAll);
+  document.getElementById('agent-name').addEventListener('blur', () => {
+    if (!guestMode) return;
+    rememberAgentName(document.getElementById('agent-name').value);
+    refreshForCurrentKey();
+  });
 
   /* ────────────────────────── INIT ────────────────────────── */
 
