@@ -260,6 +260,22 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   .goal-field input::-webkit-inner-spin-button,
   .goal-field input::-webkit-outer-spin-button { -webkit-appearance: none; }
   .goal-field input.locked { background: var(--ground); color: var(--mid); cursor: not-allowed; }
+  .goal-input-row { display: flex; align-items: center; gap: 5px; }
+  .goal-unlock-btn {
+    width: 22px; height: 22px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 5px;
+    background: #F4F1EE;
+    color: var(--mid);
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .goal-unlock-btn:hover { background: var(--red); color: #fff; }
   .pct-badge {
     display: inline-flex;
     align-items: center;
@@ -660,12 +676,18 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         <div class="metric-goals">
           <label class="goal-field">
             <span>Monthly Goal</span>
-            <input class="monthly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="monthly-goal">
+            <div class="goal-input-row">
+              <input class="monthly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="monthly-goal">
+              <button type="button" class="goal-unlock-btn" data-role="monthly-goal-unlock" title="Unlock to fix a mistake" hidden>✎</button>
+            </div>
           </label>
           <div class="goal-stat"><span>Monthly %</span><span class="pct-badge" data-role="monthly-pct">—</span></div>
           <label class="goal-field">
             <span>Weekly Goal</span>
-            <input class="weekly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="weekly-goal">
+            <div class="goal-input-row">
+              <input class="weekly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="weekly-goal">
+              <button type="button" class="goal-unlock-btn" data-role="weekly-goal-unlock" title="Unlock to fix a mistake" hidden>✎</button>
+            </div>
           </label>
           <div class="goal-stat"><span>Weekly %</span><span class="pct-badge" data-role="weekly-pct">—</span></div>
         </div>
@@ -684,12 +706,18 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         <div class="combo-goals">
           <label class="goal-field">
             <span>Monthly Goal</span>
-            <input class="monthly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="combo-monthly-goal">
+            <div class="goal-input-row">
+              <input class="monthly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="combo-monthly-goal">
+              <button type="button" class="goal-unlock-btn" data-role="combo-monthly-goal-unlock" title="Unlock to fix a mistake" hidden>✎</button>
+            </div>
           </label>
           <div class="goal-stat"><span>Monthly %</span><span class="pct-badge" data-role="combo-monthly-pct">—</span></div>
           <label class="goal-field">
             <span>Weekly Goal</span>
-            <input class="weekly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="combo-weekly-goal">
+            <div class="goal-input-row">
+              <input class="weekly-goal" type="number" min="1" inputmode="numeric" placeholder="—" data-role="combo-weekly-goal">
+              <button type="button" class="goal-unlock-btn" data-role="combo-weekly-goal-unlock" title="Unlock to fix a mistake" hidden>✎</button>
+            </div>
           </label>
           <div class="goal-stat"><span>Weekly %</span><span class="pct-badge" data-role="combo-weekly-pct">—</span></div>
         </div>
@@ -768,6 +796,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
           }
           onDataChanged();
         });
+        wireUnlockButton(weeklyGoalEl, row.querySelector('[data-role="weekly-goal-unlock"]'), onDataChanged);
 
         const monthlyGoalEl = row.querySelector('[data-role="monthly-goal"]');
         monthlyGoalEl.addEventListener('input', updateAll);
@@ -776,6 +805,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
             const v = parseInt(monthlyGoalEl.value, 10);
             if (v > 0) setGoalLocked(monthlyGoalEl, true);
           }
+          saveMonthlyGoalRecord();
+          updateAll();
+        });
+        wireUnlockButton(monthlyGoalEl, row.querySelector('[data-role="monthly-goal-unlock"]'), () => {
           saveMonthlyGoalRecord();
           updateAll();
         });
@@ -799,6 +832,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       saveMonthlyGoalRecord();
       updateAll();
     });
+    wireUnlockButton(monthlyGoalEl, document.querySelector('[data-role="combo-monthly-goal-unlock"]'), () => {
+      saveMonthlyGoalRecord();
+      updateAll();
+    });
 
     weeklyGoalEl.addEventListener('input', updateAll);
     weeklyGoalEl.addEventListener('blur', () => {
@@ -808,15 +845,31 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       }
       onDataChanged();
     });
+    wireUnlockButton(weeklyGoalEl, document.querySelector('[data-role="combo-weekly-goal-unlock"]'), onDataChanged);
   }
 
   function getRow(key) {
     return document.querySelector(`.metric-row[data-metric="${key}"]`);
   }
 
+  const UNLOCK_CONFIRM_MESSAGE = "This goal is locked because you committed to it. Only unlock it to fix a genuine typo or data-entry mistake — not to lower a number you're falling behind on. Continue?";
+
   function setGoalLocked(goalEl, locked) {
     goalEl.readOnly = locked;
     goalEl.classList.toggle('locked', locked);
+    const row = goalEl.closest('.goal-input-row');
+    const unlockBtn = row ? row.querySelector('.goal-unlock-btn') : null;
+    if (unlockBtn) unlockBtn.hidden = !locked;
+  }
+
+  function wireUnlockButton(goalEl, unlockBtn, onUnlocked) {
+    unlockBtn.addEventListener('click', () => {
+      if (!confirm(UNLOCK_CONFIRM_MESSAGE)) return;
+      setGoalLocked(goalEl, false);
+      goalEl.focus();
+      goalEl.select();
+      if (onUnlocked) onUnlocked();
+    });
   }
 
   /* ────────────────────────── LEAD GEN CHUNKS ────────────────────────── */
